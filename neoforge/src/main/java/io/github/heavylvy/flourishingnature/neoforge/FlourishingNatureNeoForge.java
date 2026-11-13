@@ -10,6 +10,7 @@ import io.github.heavylvy.flourishingnature.neoforge.gametest.WellbeingGameTests
 import io.github.heavylvy.flourishingnature.neoforge.herbivore.HerbivoreConfig;
 import io.github.heavylvy.flourishingnature.neoforge.herbivore.HerbivoreEvents;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdEvents;
+import io.github.heavylvy.flourishingnature.neoforge.production.ProductionEvents;
 import io.github.heavylvy.flourishingnature.neoforge.wellbeing.WellbeingEvents;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -30,6 +31,7 @@ public final class FlourishingNatureNeoForge {
         WellbeingEvents.register(modEventBus, NeoForge.EVENT_BUS);
         HerbivoreEvents.register(modEventBus, NeoForge.EVENT_BUS);
         HerbivoreConfig.register(container);
+        ProductionEvents.register(modEventBus, NeoForge.EVENT_BUS, container);
         HerdGameTests.register(modEventBus);
         WellbeingGameTests.register(modEventBus);
         WeatherGameTests.register(modEventBus);
