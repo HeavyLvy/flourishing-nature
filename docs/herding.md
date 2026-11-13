@@ -49,6 +49,12 @@ leave together.
      sidestepping water, cliffs and walls. So
      when a big herd splits, the pieces slowly walk away from each other. Herds still well
      under their wanted size are left alone so they can find each other and merge.
+  7. **Gallops:** horse and donkey herds break into a run now and then (on average once every
+     5 minutes, never in rain, with at least 2 minutes' rest between runs). The herd's home
+     races ahead 14 blocks every 2 seconds in a roughly straight line with a gentle wobble of up
+     to 8 degrees a stride, for 100 to 300 blocks, swerving around water and cliffs (each stride
+     must be walkable) and stopping early if blocked. Members run (2.2x speed) to keep up.
+     `/flourishing herd_gallop` sends the nearest horse herd off the way you're looking.
 - `FollowHerdGoal` (priority 4) walks a member back when it strays outside its herd's grazing
   circle (3 + 1.2 × √size blocks around the home), to a dry open spot inside it, a bit faster
   when far behind. `HerdCohesionGoal` (priority 5) keeps 2 to 4 blocks between herd mates and

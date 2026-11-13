@@ -41,6 +41,11 @@ final class HerdBrain {
                 : Optional.empty();
     }
 
+    boolean isGalloping() {
+        return animal.level() instanceof ServerLevel level
+                && herd().map(id -> HerdManager.of(level).isGalloping(id)).orElse(false);
+    }
+
     int herdSize() {
         return animal.level() instanceof ServerLevel level
                 ? herd().map(id -> HerdManager.of(level).size(id)).orElse(0)

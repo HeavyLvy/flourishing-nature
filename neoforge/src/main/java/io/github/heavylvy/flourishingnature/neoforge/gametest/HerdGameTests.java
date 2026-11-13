@@ -4,6 +4,8 @@ import io.github.heavylvy.flourishingnature.core.ModIdentity;
 import io.github.heavylvy.flourishingnature.core.herd.HerdHome;
 import io.github.heavylvy.flourishingnature.core.herd.HerdId;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
+import io.github.heavylvy.flourishingnature.core.herd.SpeciesId;
+import io.github.heavylvy.flourishingnature.neoforge.boundary.McRandomness;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdAttachments;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdManager;
 import java.util.ArrayList;
@@ -23,6 +25,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.animal.cow.Cow;
+import net.minecraft.world.entity.animal.equine.Horse;
 import net.minecraft.world.entity.animal.chicken.Chicken;
 import net.minecraft.world.entity.animal.fox.Fox;
 import net.minecraft.world.entity.animal.pig.Pig;
@@ -74,6 +77,9 @@ public final class HerdGameTests {
     private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SPLIT_HERDS_DRIFT_APART =
             FUNCTIONS.register("split_herds_drift_apart", () -> HerdGameTests::splitHerdsDriftApart);
 
+    private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> HORSE_HERD_GALLOPS =
+            FUNCTIONS.register("horse_herd_gallops", () -> HerdGameTests::horseHerdGallops);
+
     public static void register(IEventBus modBus) {
         FUNCTIONS.register(modBus);
         modBus.addListener(HerdGameTests::onRegisterTests);
@@ -94,6 +100,7 @@ public final class HerdGameTests {
         registerTest(event, environment, CROWDED_HERD_SPLITS, 200);
         registerTest(event, environment, HOMES_AVOID_WATER, 400);
         registerTest(event, environment, SPLIT_HERDS_DRIFT_APART, MAX_TICKS);
+        registerTest(event, environment, HORSE_HERD_GALLOPS, 400);
     }
 
     private static void registerTest(
@@ -185,6 +192,30 @@ public final class HerdGameTests {
                             .map(b -> a.anchor().distanceTo(b.anchor())))
                     .orElse(0.0);
             helper.assertTrue(gap >= 18.0, "herd homes only " + String.format(Locale.ROOT, "%.1f", gap) + " apart");
+        });
+    }
+
+    /** A horse herd sent off on a run gallops together across the pen. */
+    private static void horseHerdGallops(GameTestHelper helper) {
+        TestPens.build(helper);
+        HerdId herd = new HerdId(UUID.randomUUID());
+        List<Horse> horses = new ArrayList<>();
+        for (int z = 12; z <= 14; z++) {
+            Horse horse = helper.spawn(EntityTypes.HORSE, 3, 1, z);
+            horse.setData(HerdAttachments.PREFERENCE, new HerdPreference(3));
+            horse.setData(HerdAttachments.HERD, herd);
+            horses.add(horse);
+        }
+        helper.runAtTickTime(60, () -> {
+            double east = helper.absoluteVec(new Vec3(1, 0, 0)).x - helper.absoluteVec(Vec3.ZERO).x > 0 ? 0.0 : Math.PI;
+            helper.assertTrue(HerdManager.of(helper.getLevel()).startGallop(
+                    herd, SpeciesId.minecraft("horse"), east, new McRandomness(helper.getLevel().getRandom())), "horses won't run");
+        });
+        helper.succeedWhen(() -> {
+            for (Horse horse : horses) {
+                double x = helper.relativeVec(horse.position()).x;
+                helper.assertTrue(x > 16.0, "a horse is only at x=" + String.format(Locale.ROOT, "%.1f", x));
+            }
         });
     }
 
