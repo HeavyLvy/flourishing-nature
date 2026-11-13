@@ -27,4 +27,12 @@ final class HerdLookup {
         }
         return result;
     }
+
+    /** Animals with a herd preference within {@code radius}, not counting {@code animal}. */
+    static List<Animal> herdAnimalsNear(Animal animal, double radius) {
+        return animal.level().getEntitiesOfClass(
+                Animal.class,
+                animal.getBoundingBox().inflate(radius),
+                other -> other.getId() != animal.getId() && other.isAlive() && preference(other).isPresent());
+    }
 }

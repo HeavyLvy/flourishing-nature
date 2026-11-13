@@ -4,6 +4,8 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import io.github.heavylvy.flourishingnature.core.ModIdentity;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
+import io.github.heavylvy.flourishingnature.core.herd.PanicAlarm;
+import io.github.heavylvy.flourishingnature.core.herd.Position;
 import java.util.function.Supplier;
 import net.neoforged.neoforge.attachment.AttachmentType;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -27,4 +29,12 @@ public final class HerdAttachments {
     public static final Supplier<AttachmentType<HerdPreference>> PREFERENCE = REGISTER.register(
             "herd_preference",
             () -> AttachmentType.builder(() -> new HerdPreference(1)).serialize(PREFERENCE_CODEC).build());
+
+    /**
+     * A herd mate's panic, not saved: after a reload the danger is long gone. Read it with
+     * {@code getExistingData}; the default is never used.
+     */
+    public static final Supplier<AttachmentType<PanicAlarm>> ALARM = REGISTER.register(
+            "herd_alarm",
+            () -> AttachmentType.builder(() -> PanicAlarm.unknownChaser(new Position(0, 0, 0), 0L)).build());
 }

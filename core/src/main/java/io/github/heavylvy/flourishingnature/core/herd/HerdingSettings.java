@@ -12,6 +12,7 @@ package io.github.heavylvy.flourishingnature.core.herd;
  * @param similarityExponent how strongly mobs prefer mates with a similar preference (k)
  * @param minSpacing cohesion pushes a mob away from a mate closer than this
  * @param maxSpacing cohesion pulls a mob back when its nearest mate is farther than this
+ * @param alarmRadius herd mates within this distance of a panicking mob panic too
  */
 public record HerdingSettings(
         double scanRadius,
@@ -21,9 +22,10 @@ public record HerdingSettings(
         double seekTolerance,
         double similarityExponent,
         double minSpacing,
-        double maxSpacing) {
+        double maxSpacing,
+        double alarmRadius) {
 
-    public static final HerdingSettings DEFAULT = new HerdingSettings(16.0, 8.0, 6.0, 1.5, 0.5, 1.5, 2.0, 4.0);
+    public static final HerdingSettings DEFAULT = new HerdingSettings(16.0, 8.0, 6.0, 1.5, 0.5, 1.5, 2.0, 4.0, 10.0);
 
     public HerdingSettings {
         requirePositive("scanRadius", scanRadius);
@@ -31,6 +33,7 @@ public record HerdingSettings(
         requirePositive("clusterRadius", clusterRadius);
         requirePositive("similarityExponent", similarityExponent);
         requirePositive("minSpacing", minSpacing);
+        requirePositive("alarmRadius", alarmRadius);
         if (!(crowdFactor > 1.0)) {
             throw new IllegalArgumentException("crowdFactor must be above 1: " + crowdFactor);
         }

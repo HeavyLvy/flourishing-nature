@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
+import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -23,29 +24,40 @@ import net.neoforged.neoforge.event.entity.living.BabyEntitySpawnEvent;
 public final class HerdEvents {
     private HerdEvents() {}
 
+    /** Wolf goals: attack 5, follow owner 6, breed 7, stroll 8. Packs sit just above strolling. */
+    private static final int PACK_SEEK_PRIORITY = 7;
+    private static final int PACK_COHESION_PRIORITY = 8;
+
     public static void register(IEventBus modBus, IEventBus gameBus) {
         HerdAttachments.REGISTER.register(modBus);
         gameBus.addListener(HerdEvents::onJoin);
         gameBus.addListener(HerdEvents::onBabySpawn);
+        gameBus.addListener(HerdPanic::onDamaged);
         gameBus.addListener(HerdEvents::onRegisterCommands);
     }
 
     /**
-     * Every time a supported animal enters a level (spawned or loaded), give it a preference if it
-     * has none yet and add the herding goals. Goals are not saved, so this runs on every load.
+     * Every time an animal enters a level (spawned or loaded): prey get predator-flee goals, and
+     * herd species get a preference if they have none yet plus the herding and herd-panic goals. Goals are not saved, so this runs on every load.
      */
     private static void onJoin(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide() || !(event.getEntity() instanceof Animal animal)) {
             return;
         }
+        Predators.addFleeGoals(animal);
         BuiltInProfiles.forSpecies(EntityFacts.species(animal)).ifPresent(profile -> {
             if (HerdLookup.preference(animal).isEmpty()) {
                 HerdPreference rolled = PreferenceRoller.roll(profile.preference(), new McRandomness(animal.getRandom()));
                 animal.setData(HerdAttachments.PREFERENCE, rolled);
             }
             HerdBrain brain = new HerdBrain(animal, profile, HerdingSettings.DEFAULT);
-            animal.goalSelector.addGoal(SeekHerdGoal.PRIORITY, new SeekHerdGoal(animal, brain));
-            animal.goalSelector.addGoal(HerdCohesionGoal.PRIORITY, new HerdCohesionGoal(animal, brain));
+            // Wolves keep their hunting goals (attack at 5) above pack-keeping.
+            boolean packHunter = animal instanceof Wolf;
+            animal.goalSelector.addGoal(packHunter ? PACK_SEEK_PRIORITY : SeekHerdGoal.PRIORITY, new SeekHerdGoal(animal, brain));
+            animal.goalSelector.addGoal(packHunter ? PACK_COHESION_PRIORITY : HerdCohesionGoal.PRIORITY, new HerdCohesionGoal(animal, brain));
+            if (HerdPanic.panics(animal)) {
+                animal.goalSelector.addGoal(HerdPanicGoal.PRIORITY, new HerdPanicGoal(animal));
+            }
         });
     }
 

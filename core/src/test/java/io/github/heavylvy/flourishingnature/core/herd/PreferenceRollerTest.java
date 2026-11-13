@@ -22,42 +22,48 @@ final class PreferenceRollerTest {
     }
 
     @Test
-    void mostRollsLandNearTheMeanAndSomeAreOutliers() {
+    void eightyPercentRollTheAverageAndTenPercentAreOneOff() {
         SeededRandomness random = new SeededRandomness(2);
-        int nearMean = 0;
+        int exact = 0;
+        int oneOff = 0;
         int outliers = 0;
-        int n = 10_000;
+        int n = 20_000;
         for (int i = 0; i < n; i++) {
             int value = PreferenceRoller.roll(COW, random).value();
-            if (value >= 4 && value <= 6) {
-                nearMean++;
-            }
-            if (value <= 2 || value >= 10) {
+            if (value == 5) {
+                exact++;
+            } else if (value == 4 || value == 6) {
+                oneOff++;
+            } else if (value <= 2 || value >= 10) {
                 outliers++;
             }
         }
-        assertTrue(nearMean > n / 2, "expected most rolls in 4..6, got " + nearMean);
-        double outlierShare = outliers / (double) n;
-        assertTrue(outlierShare > 0.05 && outlierShare < 0.11, "outlier share " + outlierShare);
+        assertEquals(0.80, exact / (double) n, 0.01);
+        assertEquals(0.10, oneOff / (double) n, 0.01);
+        assertEquals(0.03, outliers / (double) n, 0.01);
     }
 
     @Test
     void babiesCentreOnTheirParents() {
-        PreferenceDistribution noOutliers = new PreferenceDistribution(5, 1.0, IntRange.of(3, 8), 0.0, List.of());
+        PreferenceDistribution noOutliers = new PreferenceDistribution(5, IntRange.of(3, 8), 0.0, List.of());
         SeededRandomness random = new SeededRandomness(3);
-        double sum = 0;
+        int seven = 0;
         int n = 5_000;
         for (int i = 0; i < n; i++) {
-            sum += PreferenceRoller.inherit(noOutliers, new HerdPreference(8), new HerdPreference(6), random).value();
+            if (PreferenceRoller.inherit(noOutliers, new HerdPreference(8), new HerdPreference(6), random).value() == 7) {
+                seven++;
+            }
         }
-        assertEquals(7.0, sum / n, 0.15);
+        assertEquals(0.80, seven / (double) n, 0.02);
     }
 
     @Test
     void inheritedMeanIsClampedToTheTypicalRange() {
-        PreferenceDistribution noOutliers = new PreferenceDistribution(5, 0.1, IntRange.of(3, 8), 0.0, List.of());
+        PreferenceDistribution noOutliers = new PreferenceDistribution(5, IntRange.of(3, 8), 0.0, List.of());
         SeededRandomness random = new SeededRandomness(4);
-        HerdPreference baby = PreferenceRoller.inherit(noOutliers, new HerdPreference(14), new HerdPreference(12), random);
-        assertEquals(8, baby.value());
+        for (int i = 0; i < 200; i++) {
+            int baby = PreferenceRoller.inherit(noOutliers, new HerdPreference(14), new HerdPreference(12), random).value();
+            assertTrue(baby >= 3 && baby <= 8, "baby " + baby);
+        }
     }
 }

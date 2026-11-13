@@ -29,13 +29,13 @@ final class ValueTypesTest {
 
     @Test
     void profileCannotListItself() {
-        PreferenceDistribution d = new PreferenceDistribution(5, 1, IntRange.of(3, 8), 0, List.of());
+        PreferenceDistribution d = new PreferenceDistribution(5, IntRange.of(3, 8), 0, List.of());
         assertThrows(IllegalArgumentException.class,
                 () -> new SpeciesProfile(BuiltInProfiles.COW, d, Map.of(BuiltInProfiles.COW, new Affinity(0.5))));
     }
 
     @Test
     void everyBuiltInProfileLoads() {
-        assertEquals(7, BuiltInProfiles.all().size());
+        assertEquals(8, BuiltInProfiles.all().size());
     }
 }
