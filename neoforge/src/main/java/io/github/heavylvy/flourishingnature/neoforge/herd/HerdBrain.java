@@ -11,6 +11,7 @@ import io.github.heavylvy.flourishingnature.core.herd.SpeciesProfile;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
 import java.util.List;
 import java.util.Optional;
+import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Animal;
 
 /**
@@ -65,12 +66,20 @@ final class HerdBrain {
         return HerdLookup.preference(animal).orElse(new HerdPreference(HerdPreference.MIN));
     }
 
-    /** Herding is off while a player is controlling the animal or it is too young. */
+    /** Herding is off for pets, babies, leashed or ridden animals, and while fleeing. */
     boolean canHerd() {
         return animal.isAlive()
                 && !animal.isBaby()
                 && !animal.isPassenger()
                 && !animal.isVehicle()
-                && !EntityFacts.isLeashed(animal);
+                && !EntityFacts.isLeashed(animal)
+                && !(animal instanceof TamableAnimal pet && pet.isTame())
+                && !isAlarmed();
+    }
+
+    /** While a herd mate's panic is active, cohesion is off so the herd scatters. */
+    private boolean isAlarmed() {
+        long now = animal.level().getGameTime();
+        return animal.getExistingData(HerdAttachments.ALARM).filter(alarm -> alarm.isActive(now)).isPresent();
     }
 }
