@@ -170,6 +170,41 @@ final class HerdPlannerTest {
     }
 
     @Test
+    void neighbouringFullHerdsDriftApartUntilWellSpaced() {
+        HerdId a = new HerdId(new UUID(9, 1));
+        HerdId b = new HerdId(new UUID(9, 2));
+        Map<HerdId, HerdHome> homes = new HashMap<>(Map.of(
+                a, new HerdHome(new Position(40, 64, 40), false, 99_999),
+                b, new HerdHome(new Position(50, 64, 40), false, 99_999)));
+        for (int pass = 0; pass < 30; pass++) {
+            List<HerdAnimal> cows = new ArrayList<>();
+            Position ha = Optional.ofNullable(homes.get(a)).orElseThrow().anchor();
+            Position hb = Optional.ofNullable(homes.get(b)).orElseThrow().anchor();
+            for (int i = 0; i < 5; i++) {
+                cows.add(cow(i, 5, ha.x(), ha.z() + i * 0.5, new Membership.InHerd(a)));
+                cows.add(cow(10 + i, 5, hb.x(), hb.z() + i * 0.5, new Membership.InHerd(b)));
+            }
+            homes = new HashMap<>(plan(cows, homes).homes());
+        }
+        double gap = Optional.ofNullable(homes.get(a)).orElseThrow().anchor().distanceTo(Optional.ofNullable(homes.get(b)).orElseThrow().anchor());
+        assertTrue(gap >= S.herdSpacing() - 1.0 && gap <= S.herdSpacing() + 2.0, "herds ended " + gap + " apart");
+    }
+
+    @Test
+    void cowAndPigHerdsDoNotPushEachOther() {
+        HerdId cows = new HerdId(new UUID(9, 1));
+        HerdId pigs = new HerdId(new UUID(9, 2));
+        List<HerdAnimal> animals = List.of(
+                cow(1, 3, 40, 40, new Membership.InHerd(cows)),
+                new HerdAnimal(2, PIG, new HerdPreference(3), new Position(45, 64, 40), new Membership.InHerd(pigs)));
+        Map<HerdId, HerdHome> homes = Map.of(
+                cows, new HerdHome(new Position(40, 64, 40), false, 99_999),
+                pigs, new HerdHome(new Position(45, 64, 40), false, 99_999));
+        HerdPlan plan = plan(animals, homes);
+        assertEquals(40.0, Optional.ofNullable(plan.homes().get(cows)).orElseThrow().anchor().x(), 1.0e-9);
+    }
+
+    @Test
     void repeatedPlanningIsStable() {
         List<HerdAnimal> cows = new ArrayList<>();
         for (int i = 0; i < 5; i++) {

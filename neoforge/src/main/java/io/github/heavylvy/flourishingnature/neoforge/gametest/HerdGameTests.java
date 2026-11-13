@@ -71,6 +71,9 @@ public final class HerdGameTests {
     private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> HOMES_AVOID_WATER =
             FUNCTIONS.register("homes_avoid_water", () -> HerdGameTests::homesAvoidWater);
 
+    private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> SPLIT_HERDS_DRIFT_APART =
+            FUNCTIONS.register("split_herds_drift_apart", () -> HerdGameTests::splitHerdsDriftApart);
+
     public static void register(IEventBus modBus) {
         FUNCTIONS.register(modBus);
         modBus.addListener(HerdGameTests::onRegisterTests);
@@ -90,6 +93,7 @@ public final class HerdGameTests {
         registerTest(event, environment, NEIGHBOURING_HERDS_MERGE, MAX_TICKS);
         registerTest(event, environment, CROWDED_HERD_SPLITS, 200);
         registerTest(event, environment, HOMES_AVOID_WATER, 400);
+        registerTest(event, environment, SPLIT_HERDS_DRIFT_APART, MAX_TICKS);
     }
 
     private static void registerTest(
@@ -151,6 +155,33 @@ public final class HerdGameTests {
             assertOneHerd(helper, content);
             assertOneHerd(helper, crowded);
             helper.assertTrue(!herdOf(crowded.getFirst()).equals(herdOf(content.getFirst())), "the crowded cows did not split off");
+        });
+    }
+
+    /** After a herd splits, the two herds' homes slowly move apart instead of sitting side by side. */
+    private static void splitHerdsDriftApart(GameTestHelper helper) {
+        TestPens.build(helper);
+        HerdId herd = new HerdId(UUID.randomUUID());
+        List<Cow> content = new ArrayList<>();
+        List<Cow> crowded = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            Cow cow = inHerd(cowAt(helper, 11 + i, 13), herd);
+            cow.setData(HerdAttachments.PREFERENCE, new HerdPreference(6));
+            content.add(cow);
+        }
+        for (int i = 0; i < 3; i++) {
+            Cow cow = inHerd(cowAt(helper, 12 + i, 15), herd);
+            cow.setData(HerdAttachments.PREFERENCE, new HerdPreference(3));
+            crowded.add(cow);
+        }
+        helper.succeedWhen(() -> {
+            HerdId big = herdOf(content.getFirst());
+            HerdId small = herdOf(crowded.getFirst());
+            helper.assertTrue(!big.equals(small), "the herd has not split yet");
+            double gap = HerdManager.homeOf(helper.getLevel(), big).flatMap(a -> HerdManager.homeOf(helper.getLevel(), small)
+                            .map(b -> a.anchor().distanceTo(b.anchor())))
+                    .orElse(0.0);
+            helper.assertTrue(gap >= 20.0, "herd homes only " + String.format(Locale.ROOT, "%.1f", gap) + " apart");
         });
     }
 

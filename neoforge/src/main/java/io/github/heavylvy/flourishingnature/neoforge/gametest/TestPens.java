@@ -4,8 +4,10 @@ import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.level.block.Blocks;
 
 /**
- * Builds the 28x28 test pen: a grass floor ringed by a 2-high barrier wall. Built in code because
- * the gametest framework placed our structure file's blocks as air; the structure only sets size.
+ * Builds the 28x28 test pen: a grass floor ringed by a 2-high barrier wall, in the corner of a
+ * 64x64 test area. Built in code because the gametest framework placed our structure file's
+ * blocks as air; the structure only sets size. The empty margin keeps pens of neighbouring tests
+ * (the framework packs tests 5 blocks apart) far enough apart that their herds never interact.
  */
 final class TestPens {
     private TestPens() {}

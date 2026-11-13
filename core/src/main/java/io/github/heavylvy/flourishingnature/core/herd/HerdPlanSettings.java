@@ -16,6 +16,8 @@ package io.github.heavylvy.flourishingnature.core.herd;
  * @param roamInterval ticks between moves for roaming herds (randomised up to double)
  * @param driftDistance how far a settled herd shuffles its home
  * @param driftInterval ticks between shuffles for settled herds (randomised up to double)
+ * @param herdSpacing herds of species that get along, whose homes are closer than this, drift apart
+ * @param spacingStep how far each such home moves away per planning pass (every 2 seconds)
  */
 public record HerdPlanSettings(
         double joinRadius,
@@ -30,14 +32,17 @@ public record HerdPlanSettings(
         double roamDistance,
         long roamInterval,
         double driftDistance,
-        long driftInterval) {
+        long driftInterval,
+        double herdSpacing,
+        double spacingStep) {
 
     public static final HerdPlanSettings DEFAULT =
-            new HerdPlanSettings(16, 10, 20, 24, 40, 14, 1.5, 0.3, 0.35, 18, 1200, 4, 2400);
+            new HerdPlanSettings(16, 10, 20, 24, 40, 14, 1.5, 0.3, 0.35, 18, 1200, 4, 2400, 24, 1.0);
 
     public HerdPlanSettings {
         if (!(crowdFactor > 1.0) || !(minAffinity > 0.0) || !(roamChance >= 0.0 && roamChance <= 1.0)
-                || roamInterval < 1 || driftInterval < 1 || !(leashRadius > joinRadius)) {
+                || roamInterval < 1 || driftInterval < 1 || !(leashRadius > joinRadius)
+                || !(herdSpacing > mergeRadius) || !(spacingStep > 0.0)) {
             throw new IllegalArgumentException("bad herd plan settings");
         }
     }
