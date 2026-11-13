@@ -5,7 +5,7 @@ package io.github.heavylvy.flourishingnature.core.wellbeing;
  *
  * @param weights how much each need matters
  * @param comfortLimit mobs within close quarters before space starts to suffer (cow: 4)
- * @param foodForFullScore food blocks nearby that count as a full pasture
+ * @param foodForFullScore edible plants nearby that count as a full pasture
  */
 public record WellbeingProfile(NeedWeights weights, int comfortLimit, int foodForFullScore) {
     public WellbeingProfile {

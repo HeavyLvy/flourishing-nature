@@ -1,9 +1,11 @@
 package io.github.heavylvy.flourishingnature.neoforge.gametest;
 
 import io.github.heavylvy.flourishingnature.core.ModIdentity;
+import io.github.heavylvy.flourishingnature.core.fullness.Fullness;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.core.wellbeing.Need;
 import io.github.heavylvy.flourishingnature.core.wellbeing.WellbeingState;
+import io.github.heavylvy.flourishingnature.neoforge.fullness.FullnessApi;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdAttachments;
 import io.github.heavylvy.flourishingnature.neoforge.wellbeing.WellbeingAttachments;
 import io.github.heavylvy.flourishingnature.neoforge.wellbeing.WellbeingEvents;
@@ -53,11 +55,17 @@ public final class WellbeingGameTests {
         }
     }
 
-    /** One cow alone on open grass under the sky: sky, food and space are full. */
+    /** One full cow alone on open grass with plenty of plants, under the sky: sky, food and space are full. */
     private static void pastureCowIsContent(GameTestHelper helper) {
         TestPens.build(helper);
+        for (int x = 7; x <= 21; x += 2) {
+            for (int z = 10; z <= 18; z += 4) {
+                helper.setBlock(x, 1, z, Blocks.SHORT_GRASS);
+            }
+        }
         Cow cow = helper.spawn(EntityTypes.COW, 14, 1, 14);
         cow.setData(HerdAttachments.PREFERENCE, new HerdPreference(1));
+        FullnessApi.set(cow, Fullness.FULL);
         helper.runAtTickTime(5, () -> {
             WellbeingState state = checkNow(helper, cow);
             helper.assertTrue(state.needs().of(Need.SKY).value() == 1.0, "sky " + state.needs().of(Need.SKY));
@@ -90,6 +98,7 @@ public final class WellbeingGameTests {
         for (int i = 0; i < 12; i++) {
             Cow cow = helper.spawn(EntityTypes.COW, 12 + i % 3, 1, 12 + Math.floorDiv(i, 3) % 3);
             cow.setData(HerdAttachments.PREFERENCE, new HerdPreference(3));
+            FullnessApi.set(cow, Fullness.EMPTY);
             cows.add(cow);
         }
         helper.runAtTickTime(5, () -> {

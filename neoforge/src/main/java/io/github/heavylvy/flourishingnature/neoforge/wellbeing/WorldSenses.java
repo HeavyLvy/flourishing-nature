@@ -13,7 +13,6 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
-import net.minecraft.world.level.block.Block;
 
 /**
  * Reads the world around an animal for the wellbeing needs. Samples a handful of blocks instead of
@@ -24,11 +23,9 @@ final class WorldSenses {
 
     static final int SKY_REACH = 4;
     static final int ROOF_REACH = 8;
+    /** Edible plants are counted this far around the animal. */
     static final int FOOD_REACH = 8;
     static final double CLOSE_QUARTERS = 3.0;
-
-    /** Blocks that count as pasture. Datapacks can extend {@code #flourishing_nature:pasture}. */
-    static final TagKey<Block> PASTURE = TagKey.create(Registries.BLOCK, id("pasture"));
 
     /** Per species: {@code #flourishing_nature:wellbeing/preferred/<species>} and {@code .../tolerated/<species>}. */
     static BiomeFit biomeFit(Animal animal, SpeciesId species) {
@@ -78,25 +75,6 @@ final class WorldSenses {
             }
         }
         return false;
-    }
-
-    /** Pasture blocks on a 2-block grid within {@link #FOOD_REACH}, at the animal's ground level ±1. */
-    static int foodBlocksNearby(Animal animal) {
-        Level level = animal.level();
-        BlockPos ground = animal.blockPosition().below();
-        int count = 0;
-        for (int dx = -FOOD_REACH; dx <= FOOD_REACH; dx += 2) {
-            for (int dz = -FOOD_REACH; dz <= FOOD_REACH; dz += 2) {
-                for (int dy = -1; dy <= 1; dy++) {
-                    BlockPos p = ground.offset(dx, dy, dz);
-                    if (level.getBlockState(p).is(PASTURE) && level.getBlockState(p.above()).isAir()) {
-                        count++;
-                        break;
-                    }
-                }
-            }
-        }
-        return count;
     }
 
     static int mobsCloseBy(Animal animal) {
