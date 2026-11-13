@@ -7,6 +7,7 @@
 | [code-standards.md](code-standards.md) | Writing any Java |
 | [git-workflow.md](git-workflow.md) | Branching, committing, opening a PR |
 | [herding.md](herding.md) | How the herding feature works and how to see it in game |
+| [wellbeing.md](wellbeing.md) | How wellbeing is scored and how to inspect it |
 
 The Minecraft 26.3 / NeoForge knowledge base will live alongside these (notes and an index
 only, never Mojang source).

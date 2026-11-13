@@ -4,6 +4,7 @@ import io.github.heavylvy.flourishingnature.core.herd.HerdDecision;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.core.herd.SocialAssessment;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
+import io.github.heavylvy.flourishingnature.neoforge.wellbeing.WellbeingAttachments;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import net.minecraft.network.chat.Component;
@@ -37,8 +38,12 @@ final class HerdDebug {
             }
             return;
         }
-        String text = String.format(Locale.ROOT, "%swants %d · has %.1f · %s",
-                PREFIX, preference.value(), 1.0 + assessment.socialCount(), label(assessment.decision()));
+        String wellbeing = animal.getExistingData(WellbeingAttachments.STATE)
+                .map(state -> String.format(Locale.ROOT, " · wellbeing %.0f %s",
+                        state.wellbeing().value(), state.wellbeing().mood().name().toLowerCase(Locale.ROOT)))
+                .orElse("");
+        String text = String.format(Locale.ROOT, "%swants %d · has %.1f · %s%s",
+                PREFIX, preference.value(), 1.0 + assessment.socialCount(), label(assessment.decision()), wellbeing);
         animal.setCustomName(Component.literal(text));
         animal.setCustomNameVisible(true);
     }
