@@ -31,8 +31,11 @@ public final class Weather {
      * overhang, a roof, or just inside a cave mouth. Searches rings outward, a few heights each.
      */
     public static Optional<BlockPos> nearestShelter(Entity entity, int radius) {
-        Level level = entity.level();
-        BlockPos origin = entity.blockPosition();
+        return nearestShelter(entity.level(), entity.blockPosition(), radius);
+    }
+
+    /** Same search, around any point. Used by herds scouting for cover. */
+    public static Optional<BlockPos> nearestShelter(Level level, BlockPos origin, int radius) {
         for (int r = 2; r <= radius; r += 2) {
             for (int step = 0; step < 16; step++) {
                 double angle = step * Math.PI / 8;

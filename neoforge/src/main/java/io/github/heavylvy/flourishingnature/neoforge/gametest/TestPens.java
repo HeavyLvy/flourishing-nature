@@ -14,11 +14,18 @@ final class TestPens {
 
     static final int SIZE = 28;
 
+    /** The whole 64x64 test area as one pen, for tests that need room to travel. */
+    static final int LARGE = 64;
+
     static void build(GameTestHelper helper) {
-        for (int x = 0; x < SIZE; x++) {
-            for (int z = 0; z < SIZE; z++) {
+        build(helper, SIZE);
+    }
+
+    static void build(GameTestHelper helper, int size) {
+        for (int x = 0; x < size; x++) {
+            for (int z = 0; z < size; z++) {
                 helper.setBlock(x, 0, z, Blocks.GRASS_BLOCK);
-                if (x == 0 || z == 0 || x == SIZE - 1 || z == SIZE - 1) {
+                if (x == 0 || z == 0 || x == size - 1 || z == size - 1) {
                     helper.setBlock(x, 1, z, Blocks.BARRIER);
                     helper.setBlock(x, 2, z, Blocks.BARRIER);
                 }
