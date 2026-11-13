@@ -1,5 +1,6 @@
 package io.github.heavylvy.flourishingnature.core.wellbeing;
 
+import io.github.heavylvy.flourishingnature.core.fullness.HungerBand;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -30,11 +31,17 @@ public final class NeedRules {
         return NeedScore.clamped(exposed + (1.0 - exposed) * shelter.value());
     }
 
-    /** Pasture nearby, or a recent meal, whichever is better. */
+    /**
+     * How fed it is and how much it could eat nearby, half each; a recent hand-fed meal can lift it.
+     * Being full counts in full from {@link HungerBand#FULL_AT}. An animal that doesn't eat plants
+     * is scored on fullness alone.
+     */
     static NeedScore food(Surroundings s, WellbeingProfile profile, WellbeingSettings settings) {
-        double pasture = Math.min(1.0, (double) s.foodBlocksNearby() / profile.foodForFullScore());
+        double fed = Math.min(1.0, s.fullness().value() / HungerBand.FULL_AT);
+        double plants = Math.min(1.0, (double) s.ediblePlantsNearby() / profile.foodForFullScore());
+        double now = s.eatsPlants() ? 0.5 * fed + 0.5 * plants : fed;
         double meal = Math.max(0.0, 1.0 - (double) s.ticksSinceMeal() / settings.mealMemoryTicks());
-        return NeedScore.clamped(Math.max(pasture, meal));
+        return NeedScore.clamped(Math.max(now, meal));
     }
 
     /**

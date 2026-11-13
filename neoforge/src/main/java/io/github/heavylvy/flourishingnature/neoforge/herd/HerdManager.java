@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.animal.Animal;
@@ -44,6 +45,35 @@ public final class HerdManager {
     static final int TICKS_BETWEEN_GALLOPS = 6000;
     /** After a run, a herd rests at least this long before the next. */
     static final int GALLOP_REST = 2400;
+
+    /**
+     * A feature that nudges a herd's home after each planning pass, such as moving it toward food
+     * or away from danger. Gets the herd's first member as a stand-in for the whole herd.
+     */
+    @FunctionalInterface
+    public interface HomeAdjuster {
+        HerdHome adjust(ServerLevel level, HerdId herd, Animal leader, HerdHome home);
+    }
+
+    private static final List<HomeAdjuster> ADJUSTERS = new CopyOnWriteArrayList<>();
+
+    /** Adds a home adjuster; they run in the order added, before shelter expeditions. */
+    public static void addHomeAdjuster(HomeAdjuster adjuster) {
+        ADJUSTERS.add(adjuster);
+    }
+
+    private static HerdHome adjust(ServerLevel level, HerdId herd, Animal leader, HerdHome home) {
+        HerdHome adjusted = home;
+        for (HomeAdjuster adjuster : ADJUSTERS) {
+            adjusted = adjuster.adjust(level, herd, leader, adjusted);
+        }
+        return adjusted;
+    }
+
+    /** How far members graze around their herd's home: bigger herds spread out more. */
+    public static double grazingRadius(ServerLevel level, HerdId herd) {
+        return FollowHerdGoal.spread(of(level).size(herd));
+    }
 
     public static HerdManager of(ServerLevel level) {
         return level.getData(HerdAttachments.MANAGER);
@@ -142,7 +172,7 @@ public final class HerdManager {
         });
         homes = new HashMap<>();
         plan.homes().forEach((herd, home) -> homes.put(herd, Optional.ofNullable(leader.get(herd))
-                .map(first -> expeditions.update(level, herd, EntityFacts.species(first), first, home, random))
+                .map(first -> expeditions.update(level, herd, EntityFacts.species(first), first, adjust(level, herd, first, home), random))
                 .orElse(home)));
         for (HerdId gone : sizes.keySet()) {
             if (!newSizes.containsKey(gone)) {

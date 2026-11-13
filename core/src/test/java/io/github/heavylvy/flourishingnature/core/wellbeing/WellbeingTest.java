@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.heavylvy.flourishingnature.core.fullness.Fullness;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -14,12 +15,12 @@ final class WellbeingTest {
 
     /** A sunny meadow with plenty of grass and the herd it wants. */
     private static Surroundings meadow() {
-        return new Surroundings(BiomeFit.PREFERRED, true, false, false, 30, 100_000L, 2, 4.0, new HerdPreference(5));
+        return new Surroundings(BiomeFit.PREFERRED, true, false, false, Fullness.FULL, true, 30, 100_000L, 2, 4.0, new HerdPreference(5));
     }
 
     /** A dark, crowded, bare shed in a biome it dislikes, never fed. */
     private static Surroundings shed() {
-        return new Surroundings(BiomeFit.DISLIKED, false, false, true, 0, 100_000L, 10, 10.0, new HerdPreference(3));
+        return new Surroundings(BiomeFit.DISLIKED, false, false, true, Fullness.EMPTY, true, 0, 100_000L, 10, 10.0, new HerdPreference(3));
     }
 
     @Test
@@ -57,15 +58,15 @@ final class WellbeingTest {
     @Test
     void duckingUnderATreeBrieflyBarelyHurtsSky() {
         WellbeingState state = WellbeingState.first(meadow(), COW, SETTINGS);
-        Surroundings underTree = new Surroundings(BiomeFit.PREFERRED, false, false, true, 30, 100_000L, 2, 4.0, new HerdPreference(5));
+        Surroundings underTree = new Surroundings(BiomeFit.PREFERRED, false, false, true, Fullness.FULL, true, 30, 100_000L, 2, 4.0, new HerdPreference(5));
         state = state.next(underTree, COW, SETTINGS);
         assertTrue(state.needs().of(Need.SKY).value() > 0.8, "one moment of shade dropped sky to " + state.needs().of(Need.SKY));
     }
 
     @Test
     void rainOnlyMattersWithoutARoof() {
-        Surroundings rainOpenField = new Surroundings(BiomeFit.PREFERRED, true, true, false, 30, 100_000L, 2, 4.0, new HerdPreference(5));
-        Surroundings rainNearBarn = new Surroundings(BiomeFit.PREFERRED, true, true, true, 30, 100_000L, 2, 4.0, new HerdPreference(5));
+        Surroundings rainOpenField = new Surroundings(BiomeFit.PREFERRED, true, true, false, Fullness.FULL, true, 30, 100_000L, 2, 4.0, new HerdPreference(5));
+        Surroundings rainNearBarn = new Surroundings(BiomeFit.PREFERRED, true, true, true, Fullness.FULL, true, 30, 100_000L, 2, 4.0, new HerdPreference(5));
         assertEquals(SETTINGS.exposedShelterScore(),
                 WellbeingState.first(rainOpenField, COW, SETTINGS).needs().of(Need.SHELTER).value(), 1.0e-9);
         assertEquals(1.0, WellbeingState.first(rainNearBarn, COW, SETTINGS).needs().of(Need.SHELTER).value(), 1.0e-9);
@@ -89,8 +90,27 @@ final class WellbeingTest {
 
     @Test
     void handFeedingFillsFoodOnBarePens() {
-        Surroundings fedToday = new Surroundings(BiomeFit.PREFERRED, true, false, false, 0, 1_000L, 2, 4.0, new HerdPreference(5));
+        Surroundings fedToday = new Surroundings(BiomeFit.PREFERRED, true, false, false, Fullness.EMPTY, true, 0, 1_000L, 2, 4.0, new HerdPreference(5));
         assertTrue(NeedRules.food(fedToday, COW, SETTINGS).value() > 0.9);
+    }
+
+    @Test
+    void foodReadsFullnessAndPlantsNearby() {
+        Surroundings fullOnGrass = food(Fullness.FULL, true, 16);
+        Surroundings hungryOnGrass = food(new Fullness(0.2), true, 16);
+        Surroundings fullOnBareDirt = food(Fullness.FULL, true, 0);
+        Surroundings starvingOnBareDirt = food(Fullness.EMPTY, true, 0);
+        assertEquals(1.0, NeedRules.food(fullOnGrass, COW, SETTINGS).value(), 1.0e-9);
+        assertEquals(0.5, NeedRules.food(fullOnBareDirt, COW, SETTINGS).value(), 1.0e-9);
+        assertTrue(NeedRules.food(hungryOnGrass, COW, SETTINGS).value() < 0.7);
+        assertEquals(0.0, NeedRules.food(starvingOnBareDirt, COW, SETTINGS).value(), 1.0e-9);
+        assertEquals(1.0, NeedRules.food(food(Fullness.FULL, false, 0), COW, SETTINGS).value(), 1.0e-9,
+                "a wolf is scored on fullness alone");
+    }
+
+    private static Surroundings food(Fullness fullness, boolean eatsPlants, int plants) {
+        return new Surroundings(BiomeFit.PREFERRED, true, false, false, fullness, eatsPlants, plants, 100_000L, 2, 4.0,
+                new HerdPreference(5));
     }
 
     @Test

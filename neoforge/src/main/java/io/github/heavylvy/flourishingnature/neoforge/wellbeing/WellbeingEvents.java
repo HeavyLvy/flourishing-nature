@@ -2,6 +2,7 @@ package io.github.heavylvy.flourishingnature.neoforge.wellbeing;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
+import io.github.heavylvy.flourishingnature.core.herbivore.Diets;
 import io.github.heavylvy.flourishingnature.core.herd.BuiltInProfiles;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.core.herd.SpeciesId;
@@ -11,6 +12,8 @@ import io.github.heavylvy.flourishingnature.core.wellbeing.WellbeingProfile;
 import io.github.heavylvy.flourishingnature.core.wellbeing.WellbeingSettings;
 import io.github.heavylvy.flourishingnature.core.wellbeing.WellbeingState;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
+import io.github.heavylvy.flourishingnature.neoforge.fullness.FullnessApi;
+import io.github.heavylvy.flourishingnature.neoforge.herbivore.Forage;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdSocial;
 import java.util.Comparator;
 import java.util.Locale;
@@ -76,7 +79,11 @@ public final class WellbeingEvents {
                 WorldSenses.skyNearby(animal),
                 WorldSenses.precipitating(animal),
                 WorldSenses.roofNearby(animal),
-                WorldSenses.foodBlocksNearby(animal),
+                FullnessApi.fullness(animal),
+                Diets.forSpecies(species).isPresent(),
+                Diets.forSpecies(species)
+                        .map(diet -> Forage.ediblePlants(animal.level(), animal.position(), diet, WorldSenses.FOOD_REACH))
+                        .orElse(0),
                 sinceMeal,
                 WorldSenses.mobsCloseBy(animal),
                 HerdSocial.socialCount(animal).orElse(0.0),
