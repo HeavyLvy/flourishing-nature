@@ -1,16 +1,17 @@
 package io.github.heavylvy.flourishingnature.neoforge.herd;
 
 import io.github.heavylvy.flourishingnature.core.herd.Cohesion;
-import io.github.heavylvy.flourishingnature.core.herd.HerdDecision;
 import io.github.heavylvy.flourishingnature.core.herd.Position;
+import io.github.heavylvy.flourishingnature.neoforge.boundary.McTerrain;
 import java.util.EnumSet;
 import java.util.Optional;
 import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.animal.Animal;
 
 /**
- * Keeps a settled herd together: closes up when mates drift off and steps aside when it's too
- * cramped. Shares a priority with vanilla's random stroll so the two take turns.
+ * Light flocking inside the herd: step aside when a herd mate is too close, close up when the
+ * nearest one has drifted off. Only counts its own herd, and never steps into water or a cave.
+ * Shares a priority with vanilla's random stroll so the two take turns.
  */
 final class HerdCohesionGoal extends Goal {
     static final int PRIORITY = 5;
@@ -38,15 +39,10 @@ final class HerdCohesionGoal extends Goal {
         if (!brain.canHerd()) {
             return false;
         }
-        boolean settled = switch (brain.refresh().decision()) {
-            case HerdDecision.Content content -> true;
-            case HerdDecision.Lonely lonely -> true;
-            case HerdDecision.SeekHerd seek -> false;
-            case HerdDecision.Disperse disperse -> false;
-        };
-        target = settled
-                ? brain.self().flatMap(me -> Cohesion.adjust(me, brain.neighbors(), brain.settings()))
-                : Optional.empty();
+        McTerrain terrain = new McTerrain(animal.level());
+        target = brain.self()
+                .flatMap(me -> Cohesion.adjust(me, HerdLookup.herdMates(animal, brain.settings().herdRadius()), brain.settings()))
+                .flatMap(terrain::pasture);
         return target.isPresent();
     }
 

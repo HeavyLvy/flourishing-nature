@@ -2,6 +2,7 @@ package io.github.heavylvy.flourishingnature.neoforge.herd;
 
 import com.mojang.brigadier.Command;
 import io.github.heavylvy.flourishingnature.core.herd.BuiltInProfiles;
+import io.github.heavylvy.flourishingnature.core.herd.HerdId;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.core.herd.HerdingSettings;
 import io.github.heavylvy.flourishingnature.core.herd.PreferenceRoller;
@@ -25,7 +26,7 @@ public final class HerdEvents {
     private HerdEvents() {}
 
     /** Wolf goals: attack 5, follow owner 6, breed 7, stroll 8. Packs sit just above strolling. */
-    private static final int PACK_SEEK_PRIORITY = 7;
+    private static final int PACK_FOLLOW_PRIORITY = 7;
     private static final int PACK_COHESION_PRIORITY = 8;
 
     public static void register(IEventBus modBus, IEventBus gameBus) {
@@ -33,6 +34,7 @@ public final class HerdEvents {
         gameBus.addListener(HerdEvents::onJoin);
         gameBus.addListener(HerdEvents::onBabySpawn);
         gameBus.addListener(HerdPanic::onDamaged);
+        gameBus.addListener(HerdManager::onLevelTick);
         gameBus.addListener(HerdEvents::onRegisterCommands);
     }
 
@@ -53,7 +55,7 @@ public final class HerdEvents {
             HerdBrain brain = new HerdBrain(animal, profile, HerdingSettings.DEFAULT);
             // Wolves keep their hunting goals (attack at 5) above pack-keeping.
             boolean packHunter = animal instanceof Wolf;
-            animal.goalSelector.addGoal(packHunter ? PACK_SEEK_PRIORITY : SeekHerdGoal.PRIORITY, new SeekHerdGoal(animal, brain));
+            animal.goalSelector.addGoal(packHunter ? PACK_FOLLOW_PRIORITY : FollowHerdGoal.PRIORITY, new FollowHerdGoal(animal, brain));
             animal.goalSelector.addGoal(packHunter ? PACK_COHESION_PRIORITY : HerdCohesionGoal.PRIORITY, new HerdCohesionGoal(animal, brain));
             if (HerdPanic.panics(animal)) {
                 animal.goalSelector.addGoal(HerdPanicGoal.PRIORITY, new HerdPanicGoal(animal));
@@ -61,7 +63,7 @@ public final class HerdEvents {
         });
     }
 
-    /** Babies inherit a preference centred on their parents', so herds keep their character. */
+    /** Babies inherit a preference centred on their parents', and are born into a parent's herd. */
     private static void onBabySpawn(BabyEntitySpawnEvent event) {
         Optional<AgeableMob> child = EntityFacts.child(event);
         child.ifPresent(baby -> {
@@ -71,7 +73,13 @@ public final class HerdEvents {
             profile.ifPresent(p -> a.ifPresent(pa -> b.ifPresent(pb -> baby.setData(
                     HerdAttachments.PREFERENCE,
                     PreferenceRoller.inherit(p.preference(), pa, pb, new McRandomness(baby.getRandom()))))));
+            parentHerd(event.getParentA()).or(() -> parentHerd(event.getParentB()))
+                    .ifPresent(herd -> baby.setData(HerdAttachments.HERD, herd));
         });
+    }
+
+    private static Optional<HerdId> parentHerd(Mob parent) {
+        return parent instanceof Animal animal ? HerdLookup.herd(animal) : Optional.empty();
     }
 
     private static Optional<HerdPreference> parentPreference(Mob parent) {
