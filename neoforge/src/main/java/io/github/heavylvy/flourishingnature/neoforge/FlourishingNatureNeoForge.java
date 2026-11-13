@@ -2,6 +2,7 @@ package io.github.heavylvy.flourishingnature.neoforge;
 
 import com.mojang.logging.LogUtils;
 import io.github.heavylvy.flourishingnature.core.ModIdentity;
+import io.github.heavylvy.flourishingnature.neoforge.fullness.FullnessApi;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.HerdGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.WeatherGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.WellbeingGameTests;
@@ -21,6 +22,7 @@ public final class FlourishingNatureNeoForge {
     public FlourishingNatureNeoForge(IEventBus modEventBus) {
         modEventBus.addListener(FlourishingNatureNeoForge::onCommonSetup);
         HerdEvents.register(modEventBus, NeoForge.EVENT_BUS);
+        FullnessApi.register(modEventBus, NeoForge.EVENT_BUS);
         WellbeingEvents.register(modEventBus, NeoForge.EVENT_BUS);
         HerdGameTests.register(modEventBus);
         WellbeingGameTests.register(modEventBus);
