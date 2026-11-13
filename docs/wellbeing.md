@@ -18,7 +18,7 @@ and weighted (design doc cow weights, used for every species for now):
 - Moods: 80+ thriving, 50 to 79 content, 25 to 49 stressed, under 25 miserable.
 - Saved on the animal as the `flourishing_nature:wellbeing` attachment.
 
-Effects on milk, drops and breeding are the next build step and are not in yet.
+Effects on milk, drops, wool and breeding: see [production.md](production.md).
 
 ## Seeing it
 

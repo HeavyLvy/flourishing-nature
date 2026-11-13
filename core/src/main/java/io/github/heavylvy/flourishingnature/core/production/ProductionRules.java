@@ -63,4 +63,28 @@ public final class ProductionRules {
     public static int maxWool(HungerBand hunger, int vanillaMax) {
         return hunger == HungerBand.STARVING ? Math.min(1, vanillaMax) : vanillaMax;
     }
+
+    /** Parent's cooldown after breeding, as a share of vanilla's: thriving animals rest 25% less. */
+    public static double breedingCooldownFactor(Mood mood) {
+        return switch (mood) {
+            case THRIVING -> 0.75;
+            case CONTENT, STRESSED, MISERABLE -> 1.0;
+        };
+    }
+
+    /** How fast a baby grows up, from its parents' mood: thriving parents' babies grow 25% faster. */
+    public static double babyGrowthSpeed(Mood mood) {
+        return switch (mood) {
+            case THRIVING -> 1.25;
+            case CONTENT, STRESSED, MISERABLE -> 1.0;
+        };
+    }
+
+    /**
+     * Chance that wool grows back when a sheared sheep eats: the product rate, capped at 1 (vanilla
+     * already regrows on every meal, so thriving sheep cannot beat it).
+     */
+    public static double woolRegrowChance(Mood mood, HungerBand hunger) {
+        return Math.min(1.0, productRate(mood, hunger));
+    }
 }
