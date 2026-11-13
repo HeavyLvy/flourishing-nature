@@ -147,7 +147,64 @@ public final class HerdPlanner {
                     .orElseGet(() -> newHome(herd.getKey(), centroid(herd.getValue()), now, random, terrain, s));
             liveHomes.put(herd.getKey(), maintain(home, now, random, terrain, s));
         }
+        spreadApart(herds, liveHomes, terrain, s);
         return new HerdPlan(assignments, liveHomes);
+    }
+
+    /**
+     * Herds of species that get along push their homes apart, a block per pass, until they are
+     * {@code herdSpacing} apart: like neighbouring families who each want their own patch of
+     * pasture. So when a big herd splits, the pieces slowly walk away from each other. Herds still
+     * well under the size they want are left alone, so they can find each other and merge.
+     */
+    private static void spreadApart(
+            Map<HerdId, List<HerdAnimal>> herds, Map<HerdId, HerdHome> homes, Terrain terrain, HerdPlanSettings s) {
+        List<HerdId> ids = new ArrayList<>(homes.keySet());
+        ids.sort(Comparator.comparing(id -> id.value().toString()));
+        Map<HerdId, double[]> push = new HashMap<>();
+        for (int i = 0; i < ids.size(); i++) {
+            for (int j = i + 1; j < ids.size(); j++) {
+                HerdId a = ids.get(i);
+                HerdId b = ids.get(j);
+                Position pa = anchorOf(homes, a);
+                Position pb = anchorOf(homes, b);
+                double dx = pa.x() - pb.x();
+                double dz = pa.z() - pb.z();
+                double distance = Math.sqrt(dx * dx + dz * dz);
+                List<HerdAnimal> ma = members(herds, a);
+                List<HerdAnimal> mb = members(herds, b);
+                if (distance >= s.herdSpacing() || wantsMore(ma) || wantsMore(mb) || !compatible(lead(ma), lead(mb), s)) {
+                    continue;
+                }
+                if (distance < 1.0e-6) {
+                    dx = 1.0;
+                    dz = 0.0;
+                    distance = 1.0;
+                }
+                double ux = dx / distance;
+                double uz = dz / distance;
+                push.computeIfAbsent(a, id -> new double[2]);
+                push.computeIfAbsent(b, id -> new double[2]);
+                push.get(a)[0] += ux;
+                push.get(a)[1] += uz;
+                push.get(b)[0] -= ux;
+                push.get(b)[1] -= uz;
+            }
+        }
+        for (Map.Entry<HerdId, double[]> entry : push.entrySet()) {
+            double[] v = entry.getValue();
+            double length = Math.sqrt(v[0] * v[0] + v[1] * v[1]);
+            if (length < 1.0e-6) {
+                continue;
+            }
+            HerdHome home = Optional.ofNullable(homes.get(entry.getKey())).orElseThrow();
+            Position from = home.anchor();
+            Position wanted = new Position(
+                    from.x() + v[0] / length * s.spacingStep(), from.y(), from.z() + v[1] / length * s.spacingStep());
+            terrain.pasture(wanted).ifPresent(ground -> homes.put(
+                    entry.getKey(),
+                    new HerdHome(new Position(wanted.x(), ground.y(), wanted.z()), home.roamer(), home.nextMove())));
+        }
     }
 
     /** Members that would feel crowded in a herd of {@code size}. */

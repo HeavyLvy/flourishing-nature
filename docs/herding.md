@@ -43,6 +43,10 @@ leave together.
   5. **Homes:** a home is always dry, solid ground under open sky (`McTerrain`), so herds don't
      camp in water or caves. About 35% of herds **roam**: every 1 to 2 minutes they move their
      home 18 blocks. Settled herds shuffle it 4 blocks every 2 to 4 minutes.
+  6. **Spacing:** herds of species that get along, both at least near the size they want,
+     push their homes apart about a block every 2 seconds until they are 24 blocks apart. So
+     when a big herd splits, the pieces slowly walk away from each other. Herds still well
+     under their wanted size are left alone so they can find each other and merge.
 - `FollowHerdGoal` (priority 4) walks a member back when it strays outside its herd's grazing
   circle (3 + 1.2 × √size blocks around the home), to a dry open spot inside it, a bit faster
   when far behind. `HerdCohesionGoal` (priority 5) keeps 2 to 4 blocks between herd mates and
@@ -91,7 +95,8 @@ whether the herd roams, and wellbeing. Animals a player has named are left alone
 
 - `./gradlew :core:test` for the rules.
 - `./gradlew :neoforge:runGameTestServer` runs the in-game tests in a walled 28x28 grass pen
-  built by `TestPens` (the `herd_pen.nbt` structure only sets the size, because the framework
+  built by `TestPens` in the corner of a 64x64 test area (the `herd_pen.nbt` structure only sets
+  the size and keeps neighbouring tests' herds apart, because the framework
   placed our structure's blocks as air). With the
   herding goals removed, `scattered_cows_gather` fails (cows stay about 23 blocks apart), and
   with panic and predator goals removed, `herd_panics_together`, `sheep_flee_wolf` and
