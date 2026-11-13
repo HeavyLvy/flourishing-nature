@@ -3,6 +3,7 @@ package io.github.heavylvy.flourishingnature.neoforge.wellbeing;
 import io.github.heavylvy.flourishingnature.core.ModIdentity;
 import io.github.heavylvy.flourishingnature.core.herd.SpeciesId;
 import io.github.heavylvy.flourishingnature.core.wellbeing.BiomeFit;
+import io.github.heavylvy.flourishingnature.neoforge.boundary.Weather;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -59,10 +60,7 @@ final class WorldSenses {
 
     /** Rain or snow is falling in the animal's biome right now (whether or not it's under a roof). */
     static boolean precipitating(Animal animal) {
-        Level level = animal.level();
-        BlockPos pos = animal.blockPosition();
-        return level.isRaining()
-                && level.getBiome(pos).value().getPrecipitationAt(pos, level.getSeaLevel()) != Biome.Precipitation.NONE;
+        return Weather.precipitating(animal.level(), animal.blockPosition());
     }
 
     /** Under cover now, or a covered spot within {@link #ROOF_REACH} blocks. */
