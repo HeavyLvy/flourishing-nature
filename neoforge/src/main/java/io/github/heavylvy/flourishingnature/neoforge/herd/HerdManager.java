@@ -11,6 +11,7 @@ import io.github.heavylvy.flourishingnature.core.herd.Membership;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.McRandomness;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.McTerrain;
+import io.github.heavylvy.flourishingnature.neoforge.weather.ShelterExpeditions;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +32,7 @@ public final class HerdManager {
 
     private Map<HerdId, HerdHome> homes = new HashMap<>();
     private Map<HerdId, Integer> sizes = new HashMap<>();
+    private final ShelterExpeditions expeditions = new ShelterExpeditions();
 
     public static HerdManager of(ServerLevel level) {
         return level.getData(HerdAttachments.MANAGER);
@@ -76,15 +78,25 @@ public final class HerdManager {
         HerdPlan plan = HerdPlanner.plan(animals, homes, level.getGameTime(), random, new McTerrain(level),
                 () -> new HerdId(new UUID(level.getRandom().nextLong(), level.getRandom().nextLong())), HerdPlanSettings.DEFAULT);
         Map<HerdId, Integer> newSizes = new HashMap<>();
+        Map<HerdId, Animal> leader = new HashMap<>();
         plan.assignments().forEach((handle, herd) -> {
             newSizes.merge(herd, 1, Integer::sum);
+            Optional.ofNullable(byHandle.get(handle)).ifPresent(a -> leader.putIfAbsent(herd, a));
             Optional.ofNullable(byHandle.get(handle)).ifPresent(animal -> {
                 if (!HerdLookup.herd(animal).equals(Optional.of(herd))) {
                     animal.setData(HerdAttachments.HERD, herd);
                 }
             });
         });
-        homes = new HashMap<>(plan.homes());
+        homes = new HashMap<>();
+        plan.homes().forEach((herd, home) -> homes.put(herd, Optional.ofNullable(leader.get(herd))
+                .map(first -> expeditions.update(level, herd, EntityFacts.species(first), first, home, random))
+                .orElse(home)));
+        for (HerdId gone : sizes.keySet()) {
+            if (!newSizes.containsKey(gone)) {
+                expeditions.forget(gone);
+            }
+        }
         sizes = newSizes;
         plan.assignments().forEach((handle, herd) -> Optional.ofNullable(byHandle.get(handle)).ifPresent(animal ->
                 HerdLookup.preference(animal).ifPresent(p -> HerdDebug.show(animal, p, herd, size(herd),

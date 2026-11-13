@@ -5,6 +5,7 @@ import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.Weather;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdAttachments;
 import io.github.heavylvy.flourishingnature.neoforge.weather.SeekShelterGoal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -37,6 +38,8 @@ public final class WeatherGameTests {
             FUNCTIONS.register("cow_shelters_from_rain", () -> WeatherGameTests::cowSheltersFromRain);
     private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> DESERT_COW =
             FUNCTIONS.register("desert_cow_ignores_rain", () -> WeatherGameTests::desertCowIgnoresRain);
+    private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> HERD_EXPLORES =
+            FUNCTIONS.register("herd_explores_for_shelter", () -> WeatherGameTests::herdExploresForShelter);
     private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> WOLF_IGNORES_RAIN =
             FUNCTIONS.register("wolf_ignores_rain", () -> WeatherGameTests::wolfIgnoresRain);
 
@@ -49,9 +52,18 @@ public final class WeatherGameTests {
         Holder<TestEnvironmentDefinition<?>> rain = event.registerEnvironment(
                 id("rain"), new TestEnvironmentDefinition.Weather(TestEnvironmentDefinition.Weather.Type.RAIN));
         for (DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> test : List.of(COW_SHELTERS, DESERT_COW, WOLF_IGNORES_RAIN)) {
-            ResourceKey<Consumer<GameTestHelper>> key = ResourceKey.create(Registries.TEST_FUNCTION, test.getId());
-            event.registerTest(key.identifier(), new FunctionGameTestInstance(key, new TestData<>(rain, id("herd_pen"), 400, 0, true)));
+            register(event, rain, test, 400);
         }
+        register(event, rain, HERD_EXPLORES, 2400);
+    }
+
+    private static void register(
+            RegisterGameTestsEvent event,
+            Holder<TestEnvironmentDefinition<?>> environment,
+            DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> test,
+            int maxTicks) {
+        ResourceKey<Consumer<GameTestHelper>> key = ResourceKey.create(Registries.TEST_FUNCTION, test.getId());
+        event.registerTest(key.identifier(), new FunctionGameTestInstance(key, new TestData<>(environment, id("herd_pen"), maxTicks, 0, true)));
     }
 
     /**
@@ -71,6 +83,30 @@ public final class WeatherGameTests {
         helper.succeedWhen(() -> helper.assertTrue(Weather.covered(cow), "cow is still out in the rain"));
     }
 
+    /**
+     * A small herd caught in the rain with no cover within reach explores together and finds the
+     * grove at the far corner of the pen, about 26 blocks away.
+     */
+    private static void herdExploresForShelter(GameTestHelper helper) {
+        TestPens.build(helper);
+        setBiome(helper, "minecraft:plains");
+        for (int x = 21; x <= 25; x++) {
+            for (int z = 21; z <= 25; z++) {
+                helper.setBlock(x, 3, z, Blocks.OAK_LEAVES);
+            }
+        }
+        List<Cow> cows = new ArrayList<>();
+        for (int[] at : new int[][] {{3, 3}, {4, 3}, {3, 4}}) {
+            Cow cow = helper.spawn(EntityTypes.COW, at[0], 1, at[1]);
+            cow.setData(HerdAttachments.PREFERENCE, new HerdPreference(3));
+            cows.add(cow);
+        }
+        helper.succeedWhen(() -> {
+            long sheltered = cows.stream().filter(Weather::covered).count();
+            helper.assertTrue(sheltered >= 2, sheltered + " of 3 cows found cover");
+        });
+    }
+
     /** In a desert it never actually rains, so a cow there doesn't go looking for cover. */
     private static void desertCowIgnoresRain(GameTestHelper helper) {
         TestPens.build(helper);
@@ -86,12 +122,21 @@ public final class WeatherGameTests {
     }
 
     private static void setBiome(GameTestHelper helper, String biome) {
-        BlockPos from = helper.absolutePos(new BlockPos(0, -1, 0));
-        BlockPos to = helper.absolutePos(new BlockPos(TestPens.SIZE - 1, 6, TestPens.SIZE - 1));
-        String command = String.format(Locale.ROOT, "fillbiome %d %d %d %d %d %d %s",
-                from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ(), biome);
-        helper.getLevel().getServer().getCommands().performPrefixedCommand(
-                helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput(), command);
+        setBiome(helper, biome, TestPens.SIZE);
+    }
+
+    /** Runs /fillbiome over the pen in 32x32 tiles, staying under the block-modification limit. */
+    private static void setBiome(GameTestHelper helper, String biome, int size) {
+        for (int x0 = 0; x0 < size; x0 += 32) {
+            for (int z0 = 0; z0 < size; z0 += 32) {
+                BlockPos from = helper.absolutePos(new BlockPos(x0, -1, z0));
+                BlockPos to = helper.absolutePos(new BlockPos(Math.min(size, x0 + 32) - 1, 6, Math.min(size, z0 + 32) - 1));
+                String command = String.format(Locale.ROOT, "fillbiome %d %d %d %d %d %d %s",
+                        from.getX(), from.getY(), from.getZ(), to.getX(), to.getY(), to.getZ(), biome);
+                helper.getLevel().getServer().getCommands().performPrefixedCommand(
+                        helper.getLevel().getServer().createCommandSourceStack().withSuppressedOutput(), command);
+            }
+        }
     }
 
     /** Wolves don't mind the weather: they never get the shelter goal. */

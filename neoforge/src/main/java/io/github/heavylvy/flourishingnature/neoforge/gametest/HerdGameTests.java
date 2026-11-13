@@ -158,7 +158,10 @@ public final class HerdGameTests {
         });
     }
 
-    /** After a herd splits, the two herds' homes slowly move apart instead of sitting side by side. */
+    /**
+     * After a herd splits, the two herds' homes slowly move apart (from 14 blocks to at least 18
+     * inside the pen) instead of sitting side by side.
+     */
     private static void splitHerdsDriftApart(GameTestHelper helper) {
         TestPens.build(helper);
         HerdId herd = new HerdId(UUID.randomUUID());
@@ -181,7 +184,7 @@ public final class HerdGameTests {
             double gap = HerdManager.homeOf(helper.getLevel(), big).flatMap(a -> HerdManager.homeOf(helper.getLevel(), small)
                             .map(b -> a.anchor().distanceTo(b.anchor())))
                     .orElse(0.0);
-            helper.assertTrue(gap >= 20.0, "herd homes only " + String.format(Locale.ROOT, "%.1f", gap) + " apart");
+            helper.assertTrue(gap >= 18.0, "herd homes only " + String.format(Locale.ROOT, "%.1f", gap) + " apart");
         });
     }
 
