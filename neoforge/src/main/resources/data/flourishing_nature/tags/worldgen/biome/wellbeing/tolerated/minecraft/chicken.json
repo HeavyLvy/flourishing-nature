@@ -1,0 +1,8 @@
+{
+  "values": [
+    "minecraft:meadow",
+    "#minecraft:is_savanna",
+    "#minecraft:is_taiga",
+    "minecraft:swamp"
+  ]
+}
