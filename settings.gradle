@@ -1,0 +1,17 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { url = 'https://maven.neoforged.net/releases' }
+    }
+}
+
+plugins {
+    // Lets Gradle download the Java 25 toolchain into its own cache (no system install).
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'flourishing-nature'
+
+// core: loader-independent mod logic (no Minecraft or NeoForge classes).
+// neoforge: the NeoForge entrypoint and the boundary layer that converts Minecraft's nulls.
+include 'core', 'neoforge'
