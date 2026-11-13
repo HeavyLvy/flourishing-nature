@@ -199,11 +199,20 @@ public final class HerdPlanner {
             }
             HerdHome home = Optional.ofNullable(homes.get(entry.getKey())).orElseThrow();
             Position from = home.anchor();
-            Position wanted = new Position(
-                    from.x() + v[0] / length * s.spacingStep(), from.y(), from.z() + v[1] / length * s.spacingStep());
-            terrain.pasture(wanted).ifPresent(ground -> homes.put(
-                    entry.getKey(),
-                    new HerdHome(new Position(wanted.x(), ground.y(), wanted.z()), home.roamer(), home.nextMove())));
+            double heading = Math.atan2(v[1], v[0]);
+            // Straight away if possible; otherwise sidestep around water, cliffs or walls.
+            for (double turn : new double[] {0, Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2}) {
+                Position wanted = new Position(
+                        from.x() + Math.cos(heading + turn) * s.spacingStep(),
+                        from.y(),
+                        from.z() + Math.sin(heading + turn) * s.spacingStep());
+                Optional<Position> ground = terrain.pasture(wanted);
+                if (ground.isPresent()) {
+                    homes.put(entry.getKey(), new HerdHome(
+                            new Position(wanted.x(), ground.get().y(), wanted.z()), home.roamer(), home.nextMove()));
+                    break;
+                }
+            }
         }
     }
 

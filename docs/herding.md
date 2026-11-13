@@ -40,11 +40,13 @@ leave together.
   4. **Join or found:** an animal without a herd joins the best herd within 16 blocks that has
      room for it (no one, including itself, would feel crowded), scored by affinity, similar
      wishes and distance. Otherwise it founds its own herd. Loners stay alone.
-  5. **Homes:** a home is always dry, solid ground under open sky (`McTerrain`), so herds don't
+  5. **Homes:** a home is always dry, solid ground under open sky (`McTerrain` scans a few
+     blocks up and down for a spot an animal can stand in), so herds don't
      camp in water or caves. About 35% of herds **roam**: every 1 to 2 minutes they move their
      home 18 blocks. Settled herds shuffle it 4 blocks every 2 to 4 minutes.
   6. **Spacing:** herds of species that get along, both at least near the size they want,
-     push their homes apart about a block every 2 seconds until they are 24 blocks apart. So
+     push their homes apart about a block every 2 seconds until they are 24 blocks apart,
+     sidestepping water, cliffs and walls. So
      when a big herd splits, the pieces slowly walk away from each other. Herds still well
      under their wanted size are left alone so they can find each other and merge.
 - `FollowHerdGoal` (priority 4) walks a member back when it strays outside its herd's grazing
