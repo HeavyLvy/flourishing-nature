@@ -7,7 +7,9 @@ import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.core.herd.HerdingSettings;
 import io.github.heavylvy.flourishingnature.core.herd.PreferenceRoller;
 import io.github.heavylvy.flourishingnature.core.herd.SpeciesProfile;
+import io.github.heavylvy.flourishingnature.core.weather.WeatherTolerance;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
+import io.github.heavylvy.flourishingnature.neoforge.weather.SeekShelterGoal;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.McRandomness;
 import java.util.Optional;
 import net.minecraft.commands.Commands;
@@ -47,6 +49,9 @@ public final class HerdEvents {
             return;
         }
         Predators.addFleeGoals(animal);
+        if (WeatherTolerance.seeksShelter(EntityFacts.species(animal))) {
+            animal.goalSelector.addGoal(SeekShelterGoal.PRIORITY, new SeekShelterGoal(animal));
+        }
         BuiltInProfiles.forSpecies(EntityFacts.species(animal)).ifPresent(profile -> {
             if (HerdLookup.preference(animal).isEmpty()) {
                 HerdPreference rolled = PreferenceRoller.roll(profile.preference(), new McRandomness(animal.getRandom()));

@@ -3,6 +3,7 @@ package io.github.heavylvy.flourishingnature.neoforge;
 import com.mojang.logging.LogUtils;
 import io.github.heavylvy.flourishingnature.core.ModIdentity;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.HerdGameTests;
+import io.github.heavylvy.flourishingnature.neoforge.gametest.WeatherGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.WellbeingGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdEvents;
 import io.github.heavylvy.flourishingnature.neoforge.wellbeing.WellbeingEvents;
@@ -23,6 +24,7 @@ public final class FlourishingNatureNeoForge {
         WellbeingEvents.register(modEventBus, NeoForge.EVENT_BUS);
         HerdGameTests.register(modEventBus);
         WellbeingGameTests.register(modEventBus);
+        WeatherGameTests.register(modEventBus);
     }
 
     private static void onCommonSetup(FMLCommonSetupEvent event) {
