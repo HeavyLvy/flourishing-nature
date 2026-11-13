@@ -1,0 +1,42 @@
+// Shared strictness settings for every module.
+// Error Prone + NullAway turn any possible null into a compile error.
+plugins {
+    id 'net.ltgt.errorprone' version '5.2.0' apply false
+    id 'net.neoforged.moddev' version '2.0.148' apply false
+}
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'net.ltgt.errorprone'
+
+    group = mod_group_id
+    version = mod_version
+
+    repositories {
+        mavenCentral()
+    }
+
+    java.toolchain.languageVersion = JavaLanguageVersion.of(25)
+
+    dependencies {
+        api "org.jspecify:jspecify:${jspecify_version}"
+        errorprone "com.google.errorprone:error_prone_core:${errorprone_version}"
+        errorprone "com.uber.nullaway:nullaway:${nullaway_version}"
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.compilerArgs.addAll(['-Xlint:all,-processing,-serial', '-Werror'])
+        options.errorprone {
+            disableWarningsInGeneratedCode = true
+            excludedPaths = '.*/build/generated/.*'
+            error('NullAway')
+            // Every package must be @NullMarked; unmarked code is treated as unchecked.
+            option('NullAway:OnlyNullMarked', 'true')
+            option('NullAway:JSpecifyMode', 'true')
+            // Optional.get() without an isPresent check is an error too.
+            option('NullAway:CheckOptionalEmptiness', 'true')
+            option('NullAway:CheckContracts', 'true')
+        }
+    }
+}

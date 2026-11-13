@@ -1,0 +1,31 @@
+// Loader-independent logic: herding, wellbeing, etc. Must never import Minecraft or NeoForge.
+dependencies {
+    testImplementation platform("org.junit:junit-bom:${junit_version}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+}
+
+// Core code has no boundary with Minecraft, so it may not mention null at all.
+def checkNoNull = tasks.register('checkNoNull') {
+    def sources = fileTree('src/main/java') { include '**/*.java' }
+    inputs.files(sources)
+    doLast {
+        def offenders = []
+        sources.each { File f ->
+            // Strip block comments, line comments and string literals before searching.
+            def code = f.text.replaceAll(/(?s)\/\*.*?\*\//, '').replaceAll(/\/\/.*/, '').replaceAll(/"(?:\\.|[^"\\])*"/, '""')
+            if (code =~ /\bnull\b|@Nullable/) {
+                offenders << f
+            }
+        }
+        if (!offenders.isEmpty()) {
+            throw new GradleException("null or @Nullable is banned in core. Use Optional instead:\n  " + offenders.join('\n  '))
+        }
+    }
+}
+tasks.named('check') { dependsOn checkNoNull }
+tasks.named('compileJava') { dependsOn checkNoNull }
