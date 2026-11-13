@@ -1,7 +1,9 @@
 package io.github.heavylvy.flourishingnature.neoforge.herd;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.context.CommandContext;
 import io.github.heavylvy.flourishingnature.core.herd.BuiltInProfiles;
+import io.github.heavylvy.flourishingnature.core.herd.Gallop;
 import io.github.heavylvy.flourishingnature.core.herd.HerdId;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.core.herd.HerdingSettings;
@@ -11,13 +13,17 @@ import io.github.heavylvy.flourishingnature.core.weather.WeatherTolerance;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
 import io.github.heavylvy.flourishingnature.neoforge.weather.SeekShelterGoal;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.McRandomness;
+import java.util.Comparator;
 import java.util.Optional;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Animal;
 import net.minecraft.world.entity.animal.wolf.Wolf;
+import net.minecraft.world.phys.AABB;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
@@ -83,6 +89,26 @@ public final class HerdEvents {
         });
     }
 
+    /** Sends the nearest horse herd within 16 blocks off on a run, heading where the caller looks. */
+    private static int gallopNearest(CommandContext<CommandSourceStack> context) {
+        CommandSourceStack source = context.getSource();
+        ServerLevel level = source.getLevel();
+        Optional<Animal> nearest = level.getEntitiesOfClass(Animal.class, AABB.ofSize(source.getPosition(), 32, 16, 32),
+                        a -> Gallop.runs(EntityFacts.species(a)) && HerdLookup.herd(a).isPresent())
+                .stream()
+                .min(Comparator.comparingDouble(a -> a.distanceToSqr(source.getPosition())));
+        double heading = Math.toRadians(source.getRotation().y + 90.0);
+        boolean started = nearest.flatMap(a -> HerdLookup.herd(a).map(herd -> HerdManager.of(level)
+                        .startGallop(herd, EntityFacts.species(a), heading, new McRandomness(level.getRandom()))))
+                .orElse(false);
+        if (!started) {
+            source.sendFailure(Component.literal("No horse or donkey herd within 16 blocks"));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Off they go"), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
     private static Optional<HerdId> parentHerd(Mob parent) {
         return parent instanceof Animal animal ? HerdLookup.herd(animal) : Optional.empty();
     }
@@ -94,6 +120,7 @@ public final class HerdEvents {
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("flourishing")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                .then(Commands.literal("herd_gallop").executes(HerdEvents::gallopNearest))
                 .then(Commands.literal("herd_debug").executes(context -> {
                     boolean on = HerdDebug.toggle();
                     context.getSource().sendSuccess(

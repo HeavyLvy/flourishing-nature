@@ -11,12 +11,16 @@ import net.minecraft.world.entity.animal.Animal;
 
 /**
  * Keeps an animal near its herd's home. When it has strayed outside the herd's grazing circle, it
- * walks to a dry, open spot inside it. When a roaming herd moves its home, everyone follows.
+ * walks to a dry, open spot inside it. When a roaming herd moves its home, everyone follows; when
+ * a horse herd gallops, everyone runs to keep up.
  */
 final class FollowHerdGoal extends Goal {
     static final int PRIORITY = 4;
     private static final double SPEED = 1.0;
     private static final double CATCH_UP_SPEED = 1.15;
+    /** Running with a galloping herd. */
+    private static final double GALLOP_SPEED = 2.2;
+    private static final double GALLOP_SPREAD = 3.0;
     private static final int CHECK_INTERVAL = 20;
 
     private final Animal animal;
@@ -38,7 +42,7 @@ final class FollowHerdGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        if (cooldown > 0) {
+        if (cooldown > 0 && !brain.isGalloping()) {
             cooldown--;
             return false;
         }
@@ -48,10 +52,13 @@ final class FollowHerdGoal extends Goal {
         }
         Optional<HerdHome> home = brain.home();
         Position here = EntityFacts.position(animal);
-        double spread = spread(brain.herdSize());
+        boolean galloping = brain.isGalloping();
+        double spread = galloping ? GALLOP_SPREAD : spread(brain.herdSize());
         target = home.filter(h -> h.anchor().distanceTo(here) > spread)
                 .flatMap(h -> pickSpot(h.anchor(), spread));
-        speed = home.map(h -> h.anchor().distanceTo(here) > 3 * spread ? CATCH_UP_SPEED : SPEED).orElse(SPEED);
+        speed = galloping
+                ? GALLOP_SPEED
+                : home.map(h -> h.anchor().distanceTo(here) > 3 * spread ? CATCH_UP_SPEED : SPEED).orElse(SPEED);
         return target.isPresent();
     }
 
