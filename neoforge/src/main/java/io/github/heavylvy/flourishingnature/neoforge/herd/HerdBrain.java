@@ -1,83 +1,69 @@
 package io.github.heavylvy.flourishingnature.neoforge.herd;
 
-import io.github.heavylvy.flourishingnature.core.herd.HerdDecision;
+import io.github.heavylvy.flourishingnature.core.herd.HerdHome;
+import io.github.heavylvy.flourishingnature.core.herd.HerdId;
 import io.github.heavylvy.flourishingnature.core.herd.HerdMember;
-import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.core.herd.HerdingSettings;
-import io.github.heavylvy.flourishingnature.core.herd.Neighbor;
-import io.github.heavylvy.flourishingnature.core.herd.SocialAssessment;
-import io.github.heavylvy.flourishingnature.core.herd.SocialScan;
 import io.github.heavylvy.flourishingnature.core.herd.SpeciesProfile;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
-import java.util.List;
 import java.util.Optional;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.TamableAnimal;
 import net.minecraft.world.entity.animal.Animal;
 
-/**
- * One animal's view of its herd, refreshed every {@link #SCAN_INTERVAL} ticks and shared by both
- * herding goals so the neighbor scan only runs once. Not saved: it is rebuilt after loading.
- */
+/** What the herding goals need to know about one animal and its herd. Not saved. */
 final class HerdBrain {
-    static final int SCAN_INTERVAL = 40;
-
     private final Animal animal;
     private final SpeciesProfile profile;
     private final HerdingSettings settings;
-    private long nextScan;
-    private List<Neighbor> neighbors = List.of();
-    private SocialAssessment assessment = new SocialAssessment(0.0, new HerdDecision.Content());
 
     HerdBrain(Animal animal, SpeciesProfile profile, HerdingSettings settings) {
         this.animal = animal;
         this.profile = profile;
         this.settings = settings;
-        // Stagger scans by entity id so a field of cows doesn't all scan on the same tick.
-        this.nextScan = animal.level().getGameTime() + Math.floorMod(animal.getId(), SCAN_INTERVAL);
     }
 
     Optional<HerdMember> self() {
         return HerdLookup.preference(animal).map(p -> new HerdMember(profile, p, EntityFacts.position(animal)));
     }
 
-    /** Rescans if the interval has passed. Returns the latest assessment either way. */
-    SocialAssessment refresh() {
-        long now = animal.level().getGameTime();
-        if (now >= nextScan) {
-            nextScan = now + SCAN_INTERVAL;
-            neighbors = HerdLookup.neighbors(animal, settings.scanRadius());
-            assessment = self()
-                    .map(me -> SocialScan.assess(me, neighbors, settings))
-                    .orElse(assessment);
-            HerdDebug.show(animal, preferenceOrLoner(), assessment);
-        }
-        return assessment;
-    }
-
-    List<Neighbor> neighbors() {
-        return neighbors;
-    }
-
     HerdingSettings settings() {
         return settings;
     }
 
-    private HerdPreference preferenceOrLoner() {
-        return HerdLookup.preference(animal).orElse(new HerdPreference(HerdPreference.MIN));
+    Optional<HerdId> herd() {
+        return HerdLookup.herd(animal);
     }
 
-    /** Herding is off for pets, babies, leashed or ridden animals, and while fleeing. */
+    Optional<HerdHome> home() {
+        return animal.level() instanceof ServerLevel level
+                ? herd().flatMap(id -> HerdManager.of(level).home(id))
+                : Optional.empty();
+    }
+
+    int herdSize() {
+        return animal.level() instanceof ServerLevel level
+                ? herd().map(id -> HerdManager.of(level).size(id)).orElse(0)
+                : 0;
+    }
+
+    /** Pets don't join herds; babies do (they follow a parent until grown). */
+    static boolean joinsHerds(Animal animal) {
+        return !(animal instanceof TamableAnimal pet && pet.isTame());
+    }
+
+    /** Whether the herding goals should steer this animal right now. */
     boolean canHerd() {
         return animal.isAlive()
+                && joinsHerds(animal)
                 && !animal.isBaby()
                 && !animal.isPassenger()
                 && !animal.isVehicle()
                 && !EntityFacts.isLeashed(animal)
-                && !(animal instanceof TamableAnimal pet && pet.isTame())
                 && !isAlarmed();
     }
 
-    /** While a herd mate's panic is active, cohesion is off so the herd scatters. */
+    /** While a herd mate's panic is active, herding is off so the herd scatters. */
     private boolean isAlarmed() {
         long now = animal.level().getGameTime();
         return animal.getExistingData(HerdAttachments.ALARM).filter(alarm -> alarm.isActive(now)).isPresent();

@@ -21,10 +21,9 @@ public final class HerdSocial {
     public static Optional<Double> socialCount(Animal animal) {
         HerdingSettings settings = HerdingSettings.DEFAULT;
         return BuiltInProfiles.forSpecies(EntityFacts.species(animal)).flatMap(profile -> preference(animal)
-                .map(p -> SocialScan.assess(
-                                new HerdMember(profile, p, EntityFacts.position(animal)),
-                                HerdLookup.neighbors(animal, settings.scanRadius()),
-                                settings)
-                        .socialCount()));
+                .map(p -> SocialScan.socialCount(
+                        new HerdMember(profile, p, EntityFacts.position(animal)),
+                        HerdLookup.neighbors(animal, settings.herdRadius()),
+                        settings)));
     }
 }

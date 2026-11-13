@@ -1,12 +1,16 @@
 package io.github.heavylvy.flourishingnature.neoforge.gametest;
 
 import io.github.heavylvy.flourishingnature.core.ModIdentity;
+import io.github.heavylvy.flourishingnature.core.herd.HerdHome;
+import io.github.heavylvy.flourishingnature.core.herd.HerdId;
 import io.github.heavylvy.flourishingnature.core.herd.HerdPreference;
 import io.github.heavylvy.flourishingnature.neoforge.herd.HerdAttachments;
+import io.github.heavylvy.flourishingnature.neoforge.herd.HerdManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Consumer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -24,6 +28,7 @@ import net.minecraft.world.entity.animal.fox.Fox;
 import net.minecraft.world.entity.animal.pig.Pig;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.entity.animal.wolf.Wolf;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.event.RegisterGameTestsEvent;
@@ -59,6 +64,13 @@ public final class HerdGameTests {
     private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> WOLF_CATCHES_FLEEING_SHEEP =
             FUNCTIONS.register("wolf_catches_fleeing_sheep", () -> HerdGameTests::wolfCatchesFleeingSheep);
 
+    private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> NEIGHBOURING_HERDS_MERGE =
+            FUNCTIONS.register("neighbouring_herds_merge", () -> HerdGameTests::neighbouringHerdsMerge);
+    private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> CROWDED_HERD_SPLITS =
+            FUNCTIONS.register("crowded_herd_splits", () -> HerdGameTests::crowdedHerdSplits);
+    private static final DeferredHolder<Consumer<GameTestHelper>, Consumer<GameTestHelper>> HOMES_AVOID_WATER =
+            FUNCTIONS.register("homes_avoid_water", () -> HerdGameTests::homesAvoidWater);
+
     public static void register(IEventBus modBus) {
         FUNCTIONS.register(modBus);
         modBus.addListener(HerdGameTests::onRegisterTests);
@@ -75,6 +87,9 @@ public final class HerdGameTests {
         registerTest(event, environment, CHICKEN_FLEES_FOX, 200);
         registerTest(event, environment, WOLVES_FORM_A_PACK, MAX_TICKS);
         registerTest(event, environment, WOLF_CATCHES_FLEEING_SHEEP, 600);
+        registerTest(event, environment, NEIGHBOURING_HERDS_MERGE, MAX_TICKS);
+        registerTest(event, environment, CROWDED_HERD_SPLITS, 200);
+        registerTest(event, environment, HOMES_AVOID_WATER, 400);
     }
 
     private static void registerTest(
@@ -86,15 +101,92 @@ public final class HerdGameTests {
         event.registerTest(key.identifier(), new FunctionGameTestInstance(key, new TestData<>(environment, PEN, maxTicks, 0, true)));
     }
 
-    /** Four cows that want a herd of 5, placed 12 blocks apart, should end up as one group. */
+    /** Four cows that want a herd of 5, placed 12 blocks apart, end up as one herd in one place. */
     private static void scatteredCowsGather(GameTestHelper helper) {
         TestPens.build(helper);
         List<Cow> cows = List.of(
                 cowAt(helper, 7, 7), cowAt(helper, 19, 7), cowAt(helper, 7, 19), cowAt(helper, 19, 19));
         helper.succeedWhen(() -> {
+            assertOneHerd(helper, cows);
             double spread = maxPairwiseDistance(cows);
             helper.assertTrue(spread < 9.0, "cows still " + String.format(Locale.ROOT, "%.1f", spread) + " blocks apart");
         });
+    }
+
+    /** Two pairs of cows that each want a herd of 5 sit in two herds 14 blocks apart: they merge. */
+    private static void neighbouringHerdsMerge(GameTestHelper helper) {
+        TestPens.build(helper);
+        HerdId west = new HerdId(UUID.randomUUID());
+        HerdId east = new HerdId(UUID.randomUUID());
+        List<Cow> cows = List.of(
+                inHerd(cowAt(helper, 6, 14), west), inHerd(cowAt(helper, 7, 15), west),
+                inHerd(cowAt(helper, 20, 14), east), inHerd(cowAt(helper, 21, 15), east));
+        helper.succeedWhen(() -> {
+            assertOneHerd(helper, cows);
+            double spread = maxPairwiseDistance(cows);
+            helper.assertTrue(spread < 9.0, "merged herd still " + String.format(Locale.ROOT, "%.1f", spread) + " blocks across");
+        });
+    }
+
+    /**
+     * A herd of 9: six cows that want 6 and three that want 3. The three feel crowded and leave
+     * together as their own herd; the six stay.
+     */
+    private static void crowdedHerdSplits(GameTestHelper helper) {
+        TestPens.build(helper);
+        HerdId herd = new HerdId(UUID.randomUUID());
+        List<Cow> content = new ArrayList<>();
+        List<Cow> crowded = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            Cow cow = inHerd(cowAt(helper, 11 + i, 13), herd);
+            cow.setData(HerdAttachments.PREFERENCE, new HerdPreference(6));
+            content.add(cow);
+        }
+        for (int i = 0; i < 3; i++) {
+            Cow cow = inHerd(cowAt(helper, 12 + i, 15), herd);
+            cow.setData(HerdAttachments.PREFERENCE, new HerdPreference(3));
+            crowded.add(cow);
+        }
+        helper.succeedWhen(() -> {
+            assertOneHerd(helper, content);
+            assertOneHerd(helper, crowded);
+            helper.assertTrue(!herdOf(crowded.getFirst()).equals(herdOf(content.getFirst())), "the crowded cows did not split off");
+        });
+    }
+
+    /** Cows standing at a lake shore get a home on land, not in the water. */
+    private static void homesAvoidWater(GameTestHelper helper) {
+        TestPens.build(helper);
+        for (int x = 1; x < 14; x++) {
+            for (int z = 1; z < TestPens.SIZE - 1; z++) {
+                helper.setBlock(x, 0, z, Blocks.WATER);
+            }
+        }
+        List<Cow> cows = List.of(cowAt(helper, 15, 13), cowAt(helper, 15, 15), cowAt(helper, 16, 14));
+        helper.succeedWhen(() -> {
+            assertOneHerd(helper, cows);
+            HerdHome home = HerdManager.homeOf(helper.getLevel(), herdOf(cows.getFirst()))
+                    .orElseThrow(() -> helper.assertionException("herd has no home"));
+            double x = helper.relativeVec(new Vec3(home.anchor().x(), home.anchor().y(), home.anchor().z())).x;
+            helper.assertTrue(x >= 14.0, "herd home is in the water at x=" + x);
+        });
+    }
+
+    private static Cow inHerd(Cow cow, HerdId herd) {
+        cow.setData(HerdAttachments.HERD, herd);
+        return cow;
+    }
+
+    private static HerdId herdOf(Cow cow) {
+        return cow.getExistingData(HerdAttachments.HERD).orElse(new HerdId(new UUID(0, 0)));
+    }
+
+    private static void assertOneHerd(GameTestHelper helper, List<Cow> cows) {
+        Optional<HerdId> first = cows.getFirst().getExistingData(HerdAttachments.HERD);
+        helper.assertTrue(first.isPresent(), "a cow has no herd yet");
+        for (Cow cow : cows) {
+            helper.assertTrue(cow.getExistingData(HerdAttachments.HERD).equals(first), "cows are in different herds");
+        }
     }
 
     /** A cow spawned in the world rolls a preference within the cow profile's possible values. */
