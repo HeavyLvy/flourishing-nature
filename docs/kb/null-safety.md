@@ -17,6 +17,8 @@ import org.jspecify.annotations.NullMarked;
 
 Inside `@NullMarked` code, every type is non-null unless written `@Nullable`. NullAway is configured with `OnlyNullMarked`, so a package **without** `package-info.java` is silently unchecked: always add one.
 
+Exception, test sources: **do not** add a `package-info.java` under `src/test/java` for a package that already has one in `src/main/java`. Gradle is fine with it, but Eclipse JDT (VS Code's Java support) compiles main and test into one project, reports "The type package-info is already defined", aborts the module's build, and then every dependent module shows bogus "cannot be resolved" errors. It is not needed: javac reads the annotation from main's compiled `package-info.class`, so the test package is still `@NullMarked` [verified 2026-11-12, NullAway flags `return null` in a `core` test]. Only a test-only package (no main counterpart) needs its own `package-info.java`.
+
 Where `@Nullable` may appear:
 - `core`: never. The `:core:checkNoNull` task fails the build on the word `null` or `@Nullable`.
 - `neoforge`: only in `io.github.heavylvy.flourishingnature.neoforge.boundary`, and there only on parameters received from vanilla overrides.

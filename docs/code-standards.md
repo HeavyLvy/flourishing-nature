@@ -4,7 +4,9 @@
 
 - Every package has a `package-info.java` with `@NullMarked`. NullAway then rejects any
   expression that might be null wherever a non-null value is expected. A package without it
-  is not checked, so always add it.
+  is not checked, so always add it. Test packages that mirror a main package must **not**
+  get their own copy (it breaks VS Code/Eclipse); they inherit main's. See
+  [kb/null-safety.md](kb/null-safety.md).
 - Represent absence with `Optional<T>`. Never return, pass, or store null.
 - `Optional.get()` without a prior check fails the build (`CheckOptionalEmptiness`). Prefer
   `map`, `orElse`, `ifPresent`, or pattern matching.
