@@ -28,13 +28,18 @@ final class NestWalk {
         return false;
     }
 
-    /** Keeps her heading for {@code pos}; true once she is within reach of it. */
+    /** Keeps her heading for a point; true once she is within {@code reach} of it. */
     static boolean reach(Chicken hen, double x, double y, double z, double reach) {
-        if (hen.distanceToSqr(x, y, z) <= reach * reach) {
+        double distance = hen.distanceToSqr(x, y, z);
+        if (distance <= reach * reach) {
             hen.getNavigation().stop();
             return true;
         }
-        if (hen.getNavigation().isDone()) {
+        if (distance < STEP_IN * STEP_IN * 4) {
+            // Paths end at the nearest block centre, which can leave her just out of reach.
+            hen.getNavigation().stop();
+            hen.getMoveControl().setWantedPosition(x, y, z, SPEED);
+        } else if (hen.getNavigation().isDone()) {
             hen.getNavigation().moveTo(x, y, z, SPEED);
         }
         return false;

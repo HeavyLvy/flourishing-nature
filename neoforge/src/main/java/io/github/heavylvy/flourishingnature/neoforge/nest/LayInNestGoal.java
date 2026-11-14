@@ -8,9 +8,11 @@ import net.minecraft.world.entity.animal.chicken.Chicken;
 final class LayInNestGoal extends Goal {
     static final int PRIORITY = 3;
     private static final int GIVE_UP_TICKS = 600;
+    private static final int CHECK_INTERVAL = 10;
 
     private final Chicken hen;
     private int ticks;
+    private int cooldown;
 
     LayInNestGoal(Chicken hen) {
         this.hen = hen;
@@ -24,7 +26,12 @@ final class LayInNestGoal extends Goal {
 
     @Override
     public boolean canUse() {
-        return hen.tickCount % 10 == 0 && wanted();
+        if (cooldown > 0) {
+            cooldown--;
+            return false;
+        }
+        cooldown = adjustedTickDelay(CHECK_INTERVAL);
+        return wanted();
     }
 
     @Override

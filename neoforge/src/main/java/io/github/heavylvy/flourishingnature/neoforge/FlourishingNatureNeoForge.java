@@ -5,6 +5,7 @@ import io.github.heavylvy.flourishingnature.core.ModIdentity;
 import io.github.heavylvy.flourishingnature.neoforge.fullness.FullnessApi;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.HerbivoreGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.HerdGameTests;
+import io.github.heavylvy.flourishingnature.neoforge.gametest.NestGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.PredatorGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.ProductionGameTests;
 import io.github.heavylvy.flourishingnature.neoforge.gametest.WeatherGameTests;
@@ -44,6 +45,7 @@ public final class FlourishingNatureNeoForge {
         HerbivoreGameTests.register(modEventBus);
         ProductionGameTests.register(modEventBus);
         PredatorGameTests.register(modEventBus);
+        NestGameTests.register(modEventBus);
     }
 
     private static void onCommonSetup(FMLCommonSetupEvent event) {
