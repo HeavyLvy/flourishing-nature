@@ -12,6 +12,7 @@
 | [production.md](production.md) | Milk charges, drops, wool and breeding by wellbeing and hunger |
 | [herbivores.md](herbivores.md) | What animals eat, self-breeding, herds moving home for food and safety |
 | [predators.md](predators.md) | Wild wolf packs: hunger-driven hunting, shared kills, pups, packs breaking up |
+| [nests.md](nests.md) | Chicken nests: claiming, building from gathered material, laying, fertile eggs, hatching, collecting |
 
 The Minecraft 26.3 / NeoForge knowledge base will live alongside these (notes and an index
 only, never Mojang source).

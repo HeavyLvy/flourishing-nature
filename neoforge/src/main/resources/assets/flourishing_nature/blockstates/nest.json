@@ -1,0 +1,34 @@
+{
+  "variants": {
+    "eggs=0,fertile=false": {
+      "model": "flourishing_nature:block/nest_eggs0"
+    },
+    "eggs=0,fertile=true": {
+      "model": "flourishing_nature:block/nest_eggs0"
+    },
+    "eggs=1,fertile=false": {
+      "model": "flourishing_nature:block/nest_eggs1"
+    },
+    "eggs=1,fertile=true": {
+      "model": "flourishing_nature:block/nest_eggs1_fertile"
+    },
+    "eggs=2,fertile=false": {
+      "model": "flourishing_nature:block/nest_eggs2"
+    },
+    "eggs=2,fertile=true": {
+      "model": "flourishing_nature:block/nest_eggs2_fertile"
+    },
+    "eggs=3,fertile=false": {
+      "model": "flourishing_nature:block/nest_eggs3"
+    },
+    "eggs=3,fertile=true": {
+      "model": "flourishing_nature:block/nest_eggs3_fertile"
+    },
+    "eggs=4,fertile=false": {
+      "model": "flourishing_nature:block/nest_eggs4"
+    },
+    "eggs=4,fertile=true": {
+      "model": "flourishing_nature:block/nest_eggs4_fertile"
+    }
+  }
+}
