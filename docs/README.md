@@ -11,6 +11,7 @@
 | [weather.md](weather.md) | How animals react to rain and snow |
 | [production.md](production.md) | Milk charges, drops, wool and breeding by wellbeing and hunger |
 | [herbivores.md](herbivores.md) | What animals eat, self-breeding, herds moving home for food and safety |
+| [predators.md](predators.md) | Wild wolf packs: hunger-driven hunting, shared kills, pups, packs breaking up |
 
 The Minecraft 26.3 / NeoForge knowledge base will live alongside these (notes and an index
 only, never Mojang source).

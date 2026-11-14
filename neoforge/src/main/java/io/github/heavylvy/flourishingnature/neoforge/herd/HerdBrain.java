@@ -6,6 +6,7 @@ import io.github.heavylvy.flourishingnature.core.herd.HerdMember;
 import io.github.heavylvy.flourishingnature.core.herd.HerdingSettings;
 import io.github.heavylvy.flourishingnature.core.herd.SpeciesProfile;
 import io.github.heavylvy.flourishingnature.neoforge.boundary.EntityFacts;
+import io.github.heavylvy.flourishingnature.neoforge.predator.WolfPacks;
 import java.util.Optional;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.TamableAnimal;
@@ -52,9 +53,12 @@ final class HerdBrain {
                 : 0;
     }
 
-    /** Pets don't join herds; babies do (they follow a parent until grown). */
+    /**
+     * Pets don't join herds; babies do (they follow a parent until grown). A wolf travelling away
+     * from its broken pack stays out of herds until it arrives.
+     */
     static boolean joinsHerds(Animal animal) {
-        return !(animal instanceof TamableAnimal pet && pet.isTame());
+        return !(animal instanceof TamableAnimal pet && pet.isTame()) && !WolfPacks.isDispersing(animal);
     }
 
     /** Whether the herding goals should steer this animal right now. */
