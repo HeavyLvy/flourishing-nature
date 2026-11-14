@@ -109,7 +109,7 @@ public final class NestBlockEntity extends BlockEntity {
         setChanged();
         BlockState state = getBlockState();
         BlockState shown = state.setValue(NestBlock.EGGS, next.size()).setValue(NestBlock.FERTILE, next.hasFertile());
-        if (shown != state) {
+        if (!shown.equals(state)) {
             NestWorld.level(this).ifPresent(level -> level.setBlock(worldPosition, shown, Block.UPDATE_CLIENTS));
         }
     }

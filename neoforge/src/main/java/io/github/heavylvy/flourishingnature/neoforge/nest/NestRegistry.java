@@ -38,7 +38,7 @@ public final class NestRegistry {
             .sound(SoundType.GRASS)
             .noOcclusion()
             .ignitedByLava()
-            .pushReaction(PushReaction.DESTROY));
+            .pushReaction(PushReaction.POPPED));
 
     public static final DeferredItem<BlockItem> NEST_ITEM = ITEMS.registerSimpleBlockItem(NEST);
 

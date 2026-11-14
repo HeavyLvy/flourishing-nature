@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "minecraft:stick",
+    "minecraft:stick",
+    "minecraft:stick",
+    "minecraft:stick",
+    "minecraft:stick",
+    "#flourishing_nature:nest_binding",
+    "#flourishing_nature:nest_binding"
+  ],
+  "result": {
+    "id": "flourishing_nature:nest"
+  }
+}

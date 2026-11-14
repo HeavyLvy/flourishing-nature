@@ -12,6 +12,7 @@ import net.minecraft.world.entity.animal.chicken.Chicken;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.neoforged.neoforge.event.EventHooks;
 
 /** Null-free lookups the nest code needs from the world. */
 public final class NestWorld {
@@ -40,8 +41,12 @@ public final class NestWorld {
         level.playSound(null, pos, sound, source, 1.0F, 1.0F);
     }
 
-    /** The spec's base protection: animals never change blocks in light of 8 or more. */
-    public static boolean protectedByLight(Level level, BlockPos pos) {
-        return level.getBrightness(LightLayer.BLOCK, pos) >= BASE_LIGHT;
+    /**
+     * The spec's base protection: animals never change blocks in light of 8 or more, nor where
+     * mob griefing is off.
+     */
+    public static boolean mayEdit(Level level, Entity animal, BlockPos pos) {
+        return level.getBrightness(LightLayer.BLOCK, pos) < BASE_LIGHT
+                && (!(level instanceof net.minecraft.server.level.ServerLevel server) || EventHooks.canEntityGrief(server, animal));
     }
 }

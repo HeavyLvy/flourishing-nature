@@ -1,0 +1,44 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "condition": {
+        "type": "minecraft:match_block",
+        "blocks": "flourishing_nature:nest",
+        "state": {
+          "wild": "false"
+        }
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "flourishing_nature:nest"
+        }
+      ],
+      "rolls": 1
+    },
+    {
+      "condition": {
+        "type": "minecraft:match_block",
+        "blocks": "flourishing_nature:nest",
+        "state": {
+          "wild": "true"
+        }
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "modifier": [
+            {
+              "type": "minecraft:set_count",
+              "count": 3
+            }
+          ],
+          "name": "minecraft:stick"
+        }
+      ],
+      "rolls": 1
+    }
+  ],
+  "random_sequence": "flourishing_nature:blocks/nest"
+}

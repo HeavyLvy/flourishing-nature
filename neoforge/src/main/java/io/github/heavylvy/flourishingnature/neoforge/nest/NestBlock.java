@@ -69,7 +69,7 @@ public final class NestBlock extends Block implements EntityBlock {
         // Fertile or not, a taken egg is an ordinary egg: hatching happens only in the nest.
         ItemStack egg = new ItemStack(Items.EGG);
         if (!player.getInventory().add(egg)) {
-            player.drop(egg, false);
+            Block.popResource(level, pos, egg);
         }
         NestWorld.playSound(level, pos, SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS);
         return InteractionResult.SUCCESS_SERVER;
