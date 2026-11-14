@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.Registries;
@@ -27,7 +28,6 @@ import net.minecraft.gametest.framework.TestEnvironmentDefinition;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.animal.sheep.Sheep;
 import net.minecraft.world.entity.animal.wolf.Wolf;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -104,12 +104,12 @@ public final class PredatorGameTests {
         FullnessApi.set(wolf, new Fullness(HUNGRY));
         Sheep adult = frozenSheep(helper, 12, 14, false);
         Sheep lamb = frozenSheep(helper, 8, 4, true);
+        AtomicInteger firstTarget = new AtomicInteger(-1);
+        helper.onEachTick(() -> Hunting.target(wolf).ifPresent(t -> firstTarget.compareAndSet(-1, t.getId())));
         helper.succeedWhen(() -> {
-            LivingEntity target = Hunting.target(wolf).orElseThrow(() -> helper.assertionException("the wolf is not hunting"));
-            if (target.getId() == adult.getId()) {
-                helper.fail("the wolf went for the healthy adult instead of the lamb");
-            }
-            helper.assertTrue(target.getId() == lamb.getId(), "the wolf is hunting something else");
+            helper.assertTrue(firstTarget.get() != -1, "the wolf is not hunting");
+            helper.assertTrue(firstTarget.get() == lamb.getId(),
+                    firstTarget.get() == adult.getId() ? "the wolf went for the healthy adult first" : "the wolf hunted something else");
         });
     }
 
